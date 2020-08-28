@@ -7,32 +7,43 @@ function _init()
 end
 
 function menu_init()
-	_update=menu_update
-	_draw=menu_draw
+	_upd=update_menu
+	_drw=draw_menu
+end
+
+function game_start()
+	_upd=game_update
+	_drw=game_draw
+end
+-->8
+--update
+function _update()
+ _upd()
 end
 
 function menu_update()
 	if btn(❎) then game_init() end
 end
 
+function game_update()
+	
+end
+-->8
+--draw
+function _draw()
+ _drw()
+end
+
 function menu_draw()
  cls()
 	print("press ❎ to start",42,63,7)
-end
--->8
---game state
-function game_init()
-	_update=game_update
-	_draw=game_draw
-end
-
-function game_update()
-	
 end
 
 function game_draw()
 	cls()
 end
+-->8
+--utility
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
