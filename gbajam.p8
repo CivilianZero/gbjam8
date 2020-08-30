@@ -44,7 +44,7 @@ function game_start()
  ani_t=0
  slctd=nil
  mvdist=0
- path={}
+ locstore={}
  
 	_upd=update_game
 	_drw=draw_game
@@ -70,28 +70,19 @@ function update_game()
 	
 	for i=0,3 do
 		if btnp(i) then
-		 if slctd and mvdist>0 then
-		  local dx,dy=cx+dirx[i+1],cy+diry[i+1]
-			 if iswalkable(dx,dy,"checkslime") then
-				 cx,cy=dx,dy
-				 add(path,{dx,dy})
-				 mvdist-=1
-			 end			 
-		 elseif not slctd then
-			 cx+=dirx[i+1]
-			 cy+=diry[i+1]
-			end
+		 movecursor(i)
 		end
 	end
 	
 	if btnp(❎) then
-	 if not slctd then
-	 	slctd=getslime(cx,cy) 
+		local is_slime=getslime(cx,cy)	
+		if not slctd and is_slime then
+	 	slctd=is_slime
+	 	locstore[1],locstore[2]=
+	 	 slctd.x,slctd.y
 		 mvdist=slctd.mr
-  elseif slctd then
-		 for p in all(path) do
-			 moveslime(p[1],p[2],slctd)
-		 end
+--  elseif slctd then
+--		 _upd=update_slime
 		end
 	end
 	
@@ -99,6 +90,8 @@ function update_game()
 		--endturn/menu
 		if slctd then
 			if mvdist<slctd.mr then
+			 slctd.x,slctd.y=
+			  locstore[1],locstore[2]
 		  cx,cy=slctd.x,slctd.y
 			 mvdist=slctd.mr
 		 else
@@ -110,12 +103,11 @@ function update_game()
 end
 
 function update_slime()
- ani_t=min(ani_t+0.125,1)
- 
+ ani_t=min(ani_t+0.05,1)
  slctd.mov(slctd,ani_t)
+ 
  if ani_t==1 then
-  slctd=nil
- 	_upd=update_game
+ 	_upd=update_game --⬅️aiturn goes here
  end
 end
 -->8
@@ -136,19 +128,19 @@ function draw_game()
 	map()
 	for s in all(slimes) do
 		drawspr(animate(s.ani),
-		        s.x+s.ox,s.y+s.oy,
+		        s.x*8+s.ox,s.y*8+s.oy,
 		        s.flp)
 	end
 	drawspr(
 	 animate(c_ani),
-	 cx,
-	 cy,false)
+	 cx*8,
+	 cy*8,false)
 end
 
 function drawspr(_spr,_x,_y,_flip)
 	palt(0,false)
 	palt(6,true)
-	spr(_spr,_x*8,_y*8,1,1,_flip)
+	spr(_spr,_x,_y,1,1,_flip)
 	pal()
 end
 
@@ -184,8 +176,6 @@ function addslime(typ,_x,_y)
 	 y=_y,
 	 ox=0,
 	 oy=0,
-	 sox=0,
-	 soy=0,
 	 flp=false,
 	 mr=slime_mov[typ],
 	 mov=nil,
@@ -208,20 +198,21 @@ function getslime(x,y)
 	return nil
 end
 
-function moveslime(dx,dy,s)
-	s.x=dx
-	s.y=dy
+function moveslime(s,dx,dy)
+	s.x+=dx
+	s.y+=dy
 	
+	slimeflip(s,dx)
 	s.sox,s.soy=-dx*8,-dy*8
-	s.ox,s.oy=s.sox,s.soy
+--	s.ox,s.oy=s.sox,s.soy
 	s.mov=mov_walk
 	ani_t=0
 	_upd=update_slime
 end
 
-function mov_walk(slime,tme)
-	slime.ox=slime.sox*(1-tme)
-	slime.oy=slime.soy*(1-tme)
+function mov_walk(s,at)
+	s.ox=s.sox*(1-at)
+	s.oy=s.soy*(1-at)
 end
 
 function slimeflip(s,dx)
@@ -229,6 +220,22 @@ function slimeflip(s,dx)
 	 s.flp=true
 	elseif dx>0 then
 		s.flp=false
+	end
+end
+-->8
+--ui/cursor
+function movecursor(i)
+	if slctd and mvdist>0 then
+		local dx,dy=dirx[i+1],diry[i+1]
+		local destx,desty=cx+dx,cy+dy
+		if iswalkable(destx,desty,"checkslime") then
+		 cx,cy=destx,desty
+		 moveslime(slctd,dx,dy)
+		 mvdist-=1
+		end			 
+	elseif not slctd then
+	 cx+=dirx[i+1]
+	 cy+=diry[i+1]
 	end
 end
 __gfx__
