@@ -57,8 +57,8 @@ function game_start()
  
  ani_t,slctd,mvdist=0,nil,0
  
- locstore,bursts,
- wind,menuwind={},{},{},nil
+ locstore,floats,
+ winds,menuwind={},{},{},nil
  
 	_upd,_drw=update_game
 	         ,draw_game
@@ -69,7 +69,7 @@ function _update60()
  t+=1
  _upd()
  if (#debug>4) debug={}
- doburst()
+ dofloats()
 end
 
 function update_menu()
@@ -174,8 +174,8 @@ function draw_game()
 	end
 	if (not slctd) drawspr(c_ani,cx*8,cy*8,false)
 	
-	for b in all(bursts) do
-		drawspr(b.ani,b.x*8,b.y*8,false)
+	for f in all(floats) do
+		oprint8(f.txt,f.x,f.y,f.c,0)
 	end
 end
 
@@ -295,11 +295,10 @@ function slimeatk(s)
 	ani_t=0
 	_upd=update_slime
 	for a in all(sr) do
-	 local ax,ay=s.x+a[1],s.y+a[2]
-	 local target=getslime(ax,ay)
---	 addburst(ax,ay)
+	 local tx,ty=s.x+a[1],s.y+a[2]
+	 local target=getslime(tx,ty)
 		if target then
-		 add(debug,target.hp)
+		 addfloat("-"..s.atk,tx*8,ty*8,12)
 			target.hp-=s.atk
 			if (not s.cleave) return 
 		end
@@ -323,8 +322,18 @@ function movecursor(i)
 	end
 end
 
-function addburst(_x,_y)
-	add(bursts,{ani={16,17,18,19},x=_x,y=_y,t=0})
+function addfloat(_txt,_x,_y,_c)
+ add(floats,{txt=_txt,x=_x,y=_y,c=_c,ty=_y-10,t=0})
+end
+
+function dofloats()
+ for f in all(floats) do
+  f.y+=(f.ty-f.y)/10
+  f.t+=1
+  if f.t>70 then
+   del(floats,f)
+  end
+ end
 end
 
 function doburst()
