@@ -6,8 +6,8 @@ __lua__
 function _init()
  t=0
  
- dirx={-1,1,0,0}
- diry={0,0,-1,1}
+ dirx,diry={-1,1,0,0,1,1,-1,-1}
+          ,{0,0,-1,1,-1,1,1,-1}
  
  --slime-opedia
  --friendly: 1-??
@@ -35,14 +35,12 @@ function _init()
 end
 
 function menu_init()
-	_upd=update_menu
-	_drw=draw_menu
+	_upd,_drw=update_menu
+	         ,draw_menu
 end
 
 function game_start()
- c_ani={48,49,50,51}
- cx=7
- cy=7
+ c_ani,cx,cy={48,49,50,51},7,7
  
  slimes={}
  
@@ -57,14 +55,13 @@ function game_start()
 		end
  end
  
- ani_t=0
- slctd=nil
- mvdist=0
- locstore={}
- bursts={}
+ ani_t,slctd,mvdist=0,nil,0
  
-	_upd=update_game
-	_drw=draw_game
+ locstore,bursts,
+ wind,menuwind={},{},{},nil
+ 
+	_upd,_drw=update_game
+	         ,draw_game
 end
 -->8
 --update
@@ -80,54 +77,75 @@ function update_menu()
 end
 
 function update_game()
- if slctd then 
-	 c_ani={32,33,34,35}
- else
-	 c_ani={48,49,50,51}
-	end
-	
-	for i=0,3 do
-		if btnp(i) then
-		 movecursor(i)
+	if menuwind then
+		if btnp(❎) then
+			menuwind.dur=0
+			menuwind=nil
 		end
-	end
-	
-	if btnp(❎) then
-		local is_slime=getslime(cx,cy)	
-		if not slctd and is_slime then
-	 	slctd=is_slime
-	 	locstore[1],locstore[2]=
-	 	 slctd.x,slctd.y
-		 mvdist=slctd.mr
-  elseif slctd then
-   slimeatk(slctd)
-		 slctd=nil
+	else
+	 for i=0,3 do
+			if btnp(i) then
+			 movecursor(i)
+			end
 		end
-	end
 	
-	if btnp(🅾️) then
-		--endturn/menu
-		if slctd then
-			if mvdist<slctd.mr then
-			 slctd.x,slctd.y=
-			  locstore[1],locstore[2]
-		  cx,cy=slctd.x,slctd.y
-			 mvdist=slctd.mr
-		 else
-		  slctd=nil
-		  _upd=update_game
-		 end
+		if btnp(❎) then
+			local is_slime=getslime(cx,cy)	
+			if not slctd and is_slime 
+			and not is_slime.hasmvd then
+		 	slctd=is_slime
+		 	locstore[1],locstore[2],mvdist=
+		 	 slctd.x,slctd.y,slctd.mr
+	  elseif slctd 
+	  and not slctd.hasatkd then
+	   slctd.hasmvd=true
+	   slimeatk(slctd)
+			end
+		end
+		
+		if btnp(🅾️) then
+			if slctd then
+				if mvdist<slctd.mr then
+				 slctd.x,slctd.y=
+				  locstore[1],locstore[2]
+			  cx,cy,mvdist=slctd.x,slctd.y,
+			               slctd.mr
+			 else
+			  slctd=nil
+			 end
+			else
+			 showmenu()
+			end
 		end
 	end
 end
 
 function update_slime()
  ani_t=min(ani_t+0.05,1)
- slctd.mov(slctd,ani_t)
+ for s in all(slimes) do
+ 	if s.mov then
+ 		s:mov()
+		end
+ end
  
  if ani_t==1 then
- 	_upd=update_game --⬅️aiturn goes here
+  for s in all(slimes) do
+   if s.mov==mov_bump then
+    s.hasatkd=true
+    slctd=nil
+   end
+  	s.mov=nil
+  end
+  _upd=update_game
  end
+end
+
+function update_aiplan()
+	
+end
+
+function update_aiturn()
+	
 end
 -->8
 --draw
@@ -135,8 +153,8 @@ function _draw()
  palt(0,false)
 	palt(6,true)
 	pal(0,140,1)
---	pal(7,13)
  _drw()
+ drawind()
  color(8)
 	foreach(debug,print)
 end
@@ -154,33 +172,27 @@ function draw_game()
 		        s.x*8+s.ox,s.y*8+s.oy,
 		        s.flp)
 	end
-	drawspr(
-	 c_ani,
-	 cx*8,
-	 cy*8,false)
+	if (not slctd) drawspr(c_ani,cx*8,cy*8,false)
+	
 	for b in all(bursts) do
 		drawspr(b.ani,b.x*8,b.y*8,false)
 	end
 end
 
 function drawspr(_spr,_x,_y,_flip)
-	spr(animate(_spr),_x,_y,1,1,_flip)
-end
-
-function animate(ani)
-	return ani[flr(t/15)%#ani+1]
+	spr(_spr[flr(t/15)%#_spr+1],_x,_y,1,1,_flip)
 end
 -->8
 --utility
 function iswalkable(x,y,mode)
- if (mode==nil) mode=""
+ local mode=mode or ""
  
  if inbounds(x,y) then
   local tle=mget(x,y)
-  if fget(tle,0)==false then
+  if not fget(tle,0) then
    if mode=="checkslime" then
     local slime=getslime(x,y)
-    return slime==false or slime!=slctd
+    return not slime or slime!=slctd
    end
    return true
   end
@@ -192,8 +204,15 @@ function inbounds(x,y)
  return not (x<0 or y<0 or x>15 or y>15)
 end
 
-function addfloat(x,y)
-	
+function rectfill2(_x,_y,_w,_h,_c)
+ rectfill(_x,_y,_x+max(_w-1,0),_y+max(_h-1,0),_c)
+end
+
+function oprint8(_t,_x,_y,_c,_c2)
+ for i=1,8 do
+  print(_t,_x+dirx[i],_y+diry[i],_c2)
+ end 
+ print(_t,_x,_y,_c)
 end
 -->8
 --slimes
@@ -235,53 +254,72 @@ function moveslime(s,dx,dy)
 	
 	slimeflip(s,dx)
 	s.sox,s.soy=-dx*8,-dy*8
---	s.ox,s.oy=s.sox,s.soy
+	s.ox,s.oy=s.sox,s.soy
 	s.mov=mov_walk
 	ani_t=0
 	_upd=update_slime
 end
 
-function mov_walk(s,at)
-	s.ox=s.sox*(1-at)
-	s.oy=s.soy*(1-at)
+function slimebump(s,dx,dy)
+	slimeflip(s,dx)
+	s.sox,s.soy=dx*8,dy*8
+	s.ox,s.oy=0,0
+	s.mov=mov_bump
+end
+
+function mov_walk(s)
+ local tme=1-ani_t
+	s.ox=s.sox*tme
+	s.oy=s.soy*tme
+end
+
+function mov_bump(s)
+ local tme=ani_t>0.5 
+       and 1-ani_t 
+       or ani_t
+ s.ox=s.sox*tme
+	s.oy=s.soy*tme
 end
 
 function slimeflip(s,dx)
-	if dx<0 then
-	 s.flp=true
-	elseif dx>0 then
-		s.flp=false
-	end
+	s.flp=dx==0 and s.flp or dx<0
 end
 
-function slimeatk(slime)
-	local range=slime.range
-	for a in all(range) do
-	 local ax,ay=slime.x+a[1],slime.y+a[2]
+function slimeatk(s)
+ local sr=s.range
+ local srx=sr[1][1]
+ slimeflip(s,srx)
+	s.sox,s.soy=srx*8,sr[1][2]*8
+	s.ox,s.oy=0,0
+	s.mov=mov_bump
+	ani_t=0
+	_upd=update_slime
+	for a in all(sr) do
+	 local ax,ay=s.x+a[1],s.y+a[2]
 	 local target=getslime(ax,ay)
-	 addburst(ax,ay)
+--	 addburst(ax,ay)
 		if target then
 		 add(debug,target.hp)
-			target.hp-=slime.atk
-			add(debug,target.hp)
-			if (not slime.cleave) return 
+			target.hp-=s.atk
+			if (not s.cleave) return 
 		end
 	end
 end
 -->8
 --ui/cursor
 function movecursor(i)
+	local dx,dy=dirx[i+1],diry[i+1]
+	local destx,desty=cx+dx,cy+dy
 	if slctd and mvdist>0 then
-		local dx,dy=dirx[i+1],diry[i+1]
-		local destx,desty=cx+dx,cy+dy
 		if iswalkable(destx,desty,"checkslime") then
 		 cx,cy=destx,desty
 		 moveslime(slctd,dx,dy)
 		 mvdist-=1
 		end			 
-	elseif not slctd then
-	 cx+=dirx[i+1]
-	 cy+=diry[i+1]
+	elseif not slctd and
+	inbounds(destx,desty) then
+	 cx=destx
+	 cy=desty
 	end
 end
 
@@ -296,6 +334,54 @@ function doburst()
 			del(bursts,b)
 		end
 	end
+end
+
+function addwind(_x,_y,_w,_h,_txt)
+ local w={x=_x,
+          y=_y,
+          w=_w,
+          h=_h,
+          txt=_txt}
+ add(wind,w)
+ return w
+end
+
+function drawind()
+ for w in all(wind) do
+  local wx,wy,ww,wh=w.x,w.y,w.w,w.h
+  rectfill2(wx,wy,ww,wh,0)
+  rect(wx+1,wy+1,wx+ww-2,wy+wh-2,6)
+  wx+=4
+  wy+=4
+  clip(wx,wy,ww-8,wh-8)
+  for i=1,#w.txt do
+   local txt=w.txt[i]
+   print(txt,wx,wy,6)
+   wy+=6
+  end
+  clip()
+ 
+  if w.dur then
+   w.dur-=1
+   if w.dur<=0 then
+    local dif=w.h/4
+    w.y+=dif/2
+    w.h-=dif
+    if w.h<3 then
+     del(wind,w)
+    end
+   end
+  else
+   if w.butt then
+    oprint8("❎",wx+ww-15,wy-1+min(sin(time())),6,0)
+   end
+  end
+ end
+end
+
+function showmenu()
+	menuwind=addwind(36,50,54,13,{"end turn?"})
+ menuwind.butt=true
 end
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -362,12 +448,15 @@ c0cccccc000000000000000000000000070ccc660000000000000000000000000000000000000000
 66cccc766cccc77c00000000000000006ccccc660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 666ccc7666cccc760000000000000000cccccc660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 66666666666666660000000000000000c6c66c660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+__gff__
+0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080800080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 0101010101010101010101010101010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0101010101010101010101010101010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0101010101010101010101010101010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0101010101010101010101010101010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0101010101010140010101010101010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0101010101010140400101010101010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0101010101010101010101010101010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0101010101500101010101010101010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0101010101010101014401010101010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
