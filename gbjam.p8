@@ -14,19 +14,25 @@ function _init()
  --enemies: ??-??
  --sword slime: type 1
  --spear slime: type 2
+ --knight slime: type 3
+ --thief slime: type 4
  
- slime_ani={64,80}
- slime_hp={2,2}
- slime_atk={2,1}
+ slime_ani={64,80,133,113}
+ slime_hp={3,4,2,3}
+ slime_atk={2,1,4,2}
  slime_range={
   {{1,0}},
-  {{1,0},{2,0}}
+  {{1,0},{2,0}},
+  {{0,1},{0,-1}},
+  {{-1,0}}
  }
  slime_cleave={
   false,
-  true
+  true,
+  false,
+  false
  }
- slime_mov={2,2}
+ slime_mov={2,2,4,3}
  
  debug={}
  
