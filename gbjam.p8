@@ -162,6 +162,7 @@ function _draw()
 	palt(6,true)
  _drw()
  drawind()
+ cursor(4,4)
  color(8)
 	foreach(debug,print)
 end
@@ -358,12 +359,12 @@ function addwind(_x,_y,_w,_h,_txt)
           w=_w,
           h=_h,
           txt=_txt}
- add(wind,w)
+ add(winds,w)
  return w
 end
 
 function drawind()
- for w in all(wind) do
+ for w in all(winds) do
   local wx,wy,ww,wh=w.x,w.y,w.w,w.h
   rectfill2(wx,wy,ww,wh,0)
   rect(wx+1,wy+1,wx+ww-2,wy+wh-2,6)
@@ -384,7 +385,7 @@ function drawind()
     w.y+=dif/2
     w.h-=dif
     if w.h<3 then
-     del(wind,w)
+     del(winds,w)
     end
    end
   else
