@@ -163,6 +163,7 @@ function _draw()
 	pal(0,140,1)
  _drw()
  drawind()
+ cursor(4,4)
  color(8)
 	foreach(debug,print)
 end
