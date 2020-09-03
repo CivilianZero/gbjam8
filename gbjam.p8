@@ -34,7 +34,7 @@ function _init()
   {{-1,0}},
   {},
   {},
-  {{-1,-1}},
+  {{-1,1}},
   {{-1,0},{-2,0},{-3,0},{-4,0}}
  }
  slime_cleave={
@@ -59,7 +59,7 @@ function menu_init()
 end
 
 function game_start()
- c_ani,cx,cy={48,49,50,51},7,7
+ c_ani,cx,cy={48,49,50,51},5,5
  
  slimes={}
  
@@ -79,9 +79,8 @@ function game_start()
  locstore,floats,movcursor,
  winds,menuwind={},{},{},{},nil
  
- distmap,turn_t=blankmap(-1),120
+ distmap,utm,tcurs=blankmap(-1),{},{}
  
- utm={}
 	_upd,_drw=update_aiplan,draw_game
 --	calcdist(4,8)
 end
@@ -90,7 +89,6 @@ end
 function _update60()
  t+=1
  _upd()
--- if (#debug>8) debug={}
  dofloats()
 end
 
@@ -109,7 +107,7 @@ function update_game()
 					s.hasatkd=false
 				end
 			end
-			_upd=update_aiplan
+			_upd=update_aiatk
 		end
 		if btnp(🅾️) then
 			menuwind.dur=0
@@ -132,8 +130,11 @@ function update_game()
 		 	 slctd.x,slctd.y,slctd.mr
 	  elseif slctd 
 	  and not slctd.hasatkd then
-	   slctd.hasmvd=true
 	   slimeatk(slctd)
+    slctd.hasmvd=true
+	   _upd=update_slime
+	  else
+	   _upd=update_slime
 			end
 		end
 		
@@ -155,9 +156,10 @@ function update_game()
 end
 
 function update_slime()
- ani_t=min(ani_t+0.13,1)
+ ani_t=min(ani_t+0.08,1)
  for s in all(slimes) do
  	if s.mov then
+ 	 s.atkpaint={}
  		s:mov()
 		end
  end
@@ -169,6 +171,7 @@ function update_slime()
     slctd=nil
    end
   	s.mov=nil
+  	paintatk(s)
   end
   _upd=update_game
  end
@@ -186,13 +189,28 @@ function update_aiplan()
 end
 
 function update_aimove()
-	local nxt=utm[#utm]
-	if nxt.tar then
-		enemyturn(nxt)
+	if utm[#utm].tar then
+		enemyturn(utm[#utm])
 	end
 	if #utm==0 then
+	 for e in all(slimes) do
+	 	if not e.ally then
+	 		paintatk(e)
+			end
+  end
 	 _upd=update_game
 	end
+end
+
+function update_aiatk()
+	for e in all(slimes) do
+		if not e.ally 
+		and not e.hasatkd then
+			slimeatk(e)
+			e:mov()
+		end
+	end
+	_upd=update_aiplan
 end
 -->8
 --draw
@@ -206,8 +224,6 @@ function _draw()
 	foreach(debug,print)
 	cursor(80,4)
 	print("fps:"..stat(7).."/"..stat(8))
-	print("ani:"..ani_t)
-	print("turn:"..turn_t)
 end
 
 function draw_menu()
@@ -229,6 +245,15 @@ function draw_game()
 		oprint8(f.txt,f.x,f.y,f.c,0)
 	end
 	
+	for e in all(slimes) do
+		if not e.ally 
+		or e.ally and e==slctd then
+			if cx==e.x and cy==e.y then
+				drawtarget(e)
+			end
+		end
+	end
+	
 --visualize distance map test
 --	for x=0,15 do
 --		for y=0,15 do
@@ -241,6 +266,12 @@ end
 
 function drawspr(_spr,_x,_y,_flip)
 	spr(_spr[flr(t/15)%#_spr+1],_x,_y,1,1,_flip)
+end
+
+function drawtarget(e)
+	for t in all(e.atkpaint) do
+		drawspr({32,33,34,35},t.x*8,t.y*8,false)
+	end
 end
 -->8
 --utility
@@ -375,6 +406,7 @@ function addslime(typ,_x,_y)
 	end
 	s.ally=s.ani[1]<=92 and true or false
 	if (not s.ally) s.flp=true
+	paintatk(s)
 	add(slimes,s)
 end
 
@@ -430,7 +462,7 @@ function slimeatk(s)
 	s.ox,s.oy=0,0
 	s.mov=mov_bump
 	ani_t=0
-	_upd=update_slime
+	s.hasatkd=true
 	for a in all(sr) do
 	 local tx,ty=s.x+a[1],s.y+a[2]
 	 local target=getslime(tx,ty)
@@ -440,6 +472,13 @@ function slimeatk(s)
 			if (not s.cleave) return 
 		end
 	end
+end
+
+function paintatk(e)
+ e.atkpaint={}
+ for a in all(e.range) do	
+  add(e.atkpaint,{x=a[1]+e.x,y=a[2]+e.y})
+ end
 end
 -->8
 --ui/cursor
@@ -540,7 +579,7 @@ function gettarget(e)
 		if s.ally then
 		tdst=999
 	  for r in all(e.range) do
-	   local dx,dy=s.x-r[1],s.y+r[2]
+	   local dx,dy=s.x-r[1],s.y-r[2]
 	   if iswalkable(dx,dy,"checkmobs") then
 	   	tdst=distmap[dx][dy]
     end
@@ -611,22 +650,22 @@ __gfx__
 66c66c666676676666c66c66667667664404400400000000fff7ffffff8788ffff1f111f00000000f7877777ff7777ff00000000ff7777ff0000000000000000
 676666766c6666c6676666766c6666c64404400400000000fff44ffff7f88fffff11f11f00000000ff777777ff8878ff00000000ff7777ff0000000000000000
 666666666666666666666666666666664404400400000000ffff4fffff887fffffffffff00000000ffffffffff7777ff00000000ff7777ff0000000000000000
-666cc6666666666666666666666cc666ffffffffff8888fffffffffff001100f111ffffffcffffffff8887ff888888888888888f000000000000000000000000
-66777766666cc666666cc6666677776688888888ff7887ffff1111ff01111110ff1ff11fcfcfcfff888888ffcccccccccccccccf000000000000000000000000
-6766667666777766667777666766667688888888ff8888fff11111ff01111110fffff11ffcffffff888887ffcccccccccccccccf000000000000000000000000
-c766667c6c7667c66c7667c6c766667c87878777ff7887fff11111ff01011010ff1ff1ffcfcfcfcf888888ffccccccccccccccff000000000000000000000000
-c766667c6c7667c66c7667c6c766667c77778787ff8888fff11f11ff01111118ff11fffffcffffff877877ffcccccccccccccccc000000000000000000000000
-6766667666777766667777666766667677777777ff7888fff11f11ff01100110ff11ff11cfcfcfcf777877fffffccccfcccccccf000000000000000000000000
-66777766666cc666666cc6666677776677777777ff8888fffffffffff010010fffffff1ffcfcfcfc7777777fffffffffcccccccf000000000000000000000000
-666cc6666666666666666666666cc666ffffffffff7887ffffffffffff0ff0ffffffffffcfcfcfcfffffffffffffffffcccccccf000000000000000000000000
-77c66c77666666666666666677c66c77ffffffffff8888fffcfffffffffcfcfcffffffffffffffcfffffffffffffffff00000000000000000000000000000000
-76666667677cc776677cc77676666667ff878787ff8888ffcfcfcfffffffffcffffffffffffcfcfc888888ffffffffff00000000000000000000000000000000
-c666666c6766667667666676c666666cff878787ff8878fffcfffffffffcfcfcffffffffffffffcf888887ffffffffff00000000000000000000000000000000
+66688666666666666666666666688666ffffffffff8888fffffffffff001100f111ffffffcffffffff8887ff888888888888888f000000000000000000000000
+6611116666688666666886666611116688888888ff7887ffff1111ff01111110ff1ff11fcfcfcfff888888ffcccccccccccccccf000000000000000000000000
+6166661666111166661111666166661688888888ff8888fff11111ff01111110fffff11ffcffffff888887ffcccccccccccccccf000000000000000000000000
+8166661868166186681661868166661887878777ff7887fff11111ff01011010ff1ff1ffcfcfcfcf888888ffccccccccccccccff000000000000000000000000
+8166661868166186681661868166661877778787ff8888fff11f11ff01111118ff11fffffcffffff877877ffcccccccccccccccc000000000000000000000000
+6166661666111166661111666166661677777777ff7888fff11f11ff01100110ff11ff11cfcfcfcf777877fffffccccfcccccccf000000000000000000000000
+6611116666688666666886666611116677777777ff8888fffffffffff010010fffffff1ffcfcfcfc7777777fffffffffcccccccf000000000000000000000000
+66688666666666666666666666688666ffffffffff7887ffffffffffff0ff0ffffffffffcfcfcfcfffffffffffffffffcccccccf000000000000000000000000
+11c66c11666666666666666611c66c11ffffffffff8888fffcfffffffffcfcfcffffffffffffffcfffffffffffffffff00000000000000000000000000000000
+16666661611cc116611cc11616666661ff878787ff8888ffcfcfcfffffffffcffffffffffffcfcfc888888ffffffffff00000000000000000000000000000000
+c666666c6166661661666616c666666cff878787ff8878fffcfffffffffcfcfcffffffffffffffcf888887ffffffffff00000000000000000000000000000000
 666666666c6666c66c6666c666666666ff777777ff7777ffcfcfcfffffffffcffcfcfcfcfcfcfcfc888888ffffffffff00000000000000000000000000000000
 666666666c6666c66c6666c666666666ff888787ff8788fffcfffffffffcfcfcffffffffffffffcf778888ffffffffff00000000000000000000000000000000
-c666666c6766667667666676c666666cff7777ffff7777ffcfcfcfffffffffcffcfcfcfcfcfcfcfc778887ffffff8fff00000000000000000000000000000000
-76666667677cc776677cc77676666667ff8878ffff7777fffcfffffffffcfcfccfcfcfcfcfcfcfcf777888ffffffffff00000000000000000000000000000000
-77c66c77666666666666666677c66c77ff7777ffff7777ffcfcfcfffffffffcffcfcfcfcfcfcfcfcff8888ffffffffff00000000000000000000000000000000
+c666666c6166661661666616c666666cff7777ffff7777ffcfcfcfffffffffcffcfcfcfcfcfcfcfc778887ffffff8fff00000000000000000000000000000000
+16666661611cc116611cc11616666661ff8878ffff7777fffcfffffffffcfcfccfcfcfcfcfcfcfcf777888ffffffffff00000000000000000000000000000000
+11c66c11666666666666666611c66c11ff7777ffff7777ffcfcfcfffffffffcffcfcfcfcfcfcfcfcff8888ffffffffff00000000000000000000000000000000
 6666666666666766666666766666666666c6666666c6666666c6666666c666666666666600000000000000000000000066667776000000000000000000000000
 6666676666cc1766666666766666667666c6666666c6666666c6666666c66666676c6c6600000000000000000000000066677767000000000000000000000000
 66cc17666c1cc71666cc1176666666766ccccc766ccccc766ccccc766ccccc7667cc6cc600000000000000000000000066777776000000000000000000000000
