@@ -50,7 +50,11 @@ function _init()
  slime_mov={3,3,5,5,0,0,2,4}
  
  debug={}
- 
+ tutorials={
+   {"   protect your slime", "tribe as they journey", "across the sjrraka", "desert with their", "sacred tablets!"},
+   {"","  the shield slime", "pushes enemies back", "when it attacks!"}
+ }
+
 --	menu_init()
  game_start() --to simplify testing
 end
@@ -91,8 +95,9 @@ function game_start()
  winds,menuwind={},{},{},{},nil
  
  distmap=blankmap(-1)
+ showtut(2)
  c_en=1
-	_upd,_drw=update_aiplan,draw_game
+	_upd,_drw=update_tutorial,draw_game
 end
 -->8
 --update
@@ -104,6 +109,14 @@ end
 
 function update_menu()
 	if (btn(❎)) game_start()
+end
+
+function update_tutorial() 
+		if btnp(❎) then
+			tutwind.dur=0
+			tutwind=nil
+      _upd = update_game
+    end
 end
 
 function update_game()
@@ -662,6 +675,11 @@ end
 function showmenu()
 	menuwind=addwind(36,50,54,13,{"end turn?"},0,6)
  menuwind.butt=true
+end
+
+function showtut(i)
+	tutwind=addwind(8,36,100,40,tutorials[i],1,15)
+  tutwind.butt=true
 end
 
 function showstats(ent)
