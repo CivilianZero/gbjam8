@@ -78,7 +78,7 @@ function _init()
  debug={}
 
 --	menu_init()
- game_start() --to simplify testing
+ game_start()
 end
 
 function menu_init()
@@ -93,8 +93,21 @@ function game_start()
  bads={}
  dmobs={}
  
- lx = levels[current_level].x
- for x=lx,lx+15 do
+ spawnthings() 			
+ 
+ ani_t,slctd,mvdist=0,nil,0
+ 
+ locstore,floats,movcursor,
+ winds,menuwind={},{},{},{},nil
+ 
+ distmap=blankmap(-1)
+ showtut(1)
+ c_en=1
+	_upd,_drw=update_tutorial,draw_game
+end
+
+function spawnthings()
+	for x=0,15 do
  	for y=0,15 do
  		for i=1,#slime_ani do
  			if mget(x,y)==slime_ani[i] then
@@ -111,17 +124,8 @@ function game_start()
  		del(slimes,s)
 		end
  end
- 
- ani_t,slctd,mvdist=0,nil,0
- 
- locstore,floats,movcursor,
- winds,menuwind={},{},{},{},nil
- 
- distmap=blankmap(-1)
- showtut(1)
- c_en=1
-	_upd,_drw=update_tutorial,draw_game
 end
+
 -->8
 --update
 function _update60()
@@ -135,11 +139,11 @@ function update_menu()
 end
 
 function update_tutorial() 
-		if btnp(❎) then
-			tutwind.dur=0
-			tutwind=nil
-      _upd = update_game
-    end
+	if btnp(❎) then
+	tutwind.dur=0
+	tutwind=nil
+  _upd = update_aiplan
+ end
 end
 
 function update_game()
