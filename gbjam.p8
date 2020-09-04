@@ -5,6 +5,8 @@ __lua__
 --by civz3r0 and jordab
 function _init()
  t=0
+ turn_org=60
+ turn_t=turn_org
  
  dirx,diry={-1,1,0,0,1,1,-1,-1}
           ,{0,0,-1,1,-1,1,1,-1}
@@ -23,7 +25,7 @@ function _init()
  
  --spear slime currently has
  --shield slime sprite⬇️
- slime_name={"sword","shielf","knight","thief","","","bunny","dragon"}
+ slime_name={"sword","shield","knight","thief","","","bunny","dragon"}
  slime_ani={64,80,84,88,68,72,96,112}
  slime_hp={3,4,2,3,0,0,2,3}
  slime_atk={2,1,4,2,0,0,1,2}
@@ -62,6 +64,8 @@ function game_start()
  c_ani,cx,cy={48,49,50,51},5,5
  
  slimes={}
+ bads={}
+ dmobs={}
  
  for x=0,15 do
  	for y=0,15 do
@@ -74,15 +78,21 @@ function game_start()
 		end
  end
  
+ for s in all(slimes) do
+ 	if not s.ally then
+ 		add(bads,s)
+ 		del(slimes,s)
+		end
+ end
+ 
  ani_t,slctd,mvdist=0,nil,0
  
  locstore,floats,movcursor,
  winds,menuwind={},{},{},{},nil
  
- distmap,utm,tcurs=blankmap(-1),{},{}
- 
+ distmap=blankmap(-1)
+ c_en=1
 	_upd,_drw=update_aiplan,draw_game
---	calcdist(4,8)
 end
 -->8
 --update
@@ -97,17 +107,16 @@ function update_menu()
 end
 
 function update_game()
+ c_en=1
 	if menuwind then
 		if btnp(❎) then
 			menuwind.dur=0
 			menuwind=nil
 			for s in all(slimes) do
-				if s.ally then
-					s.hasmvd=false
-					s.hasatkd=false
-				end
+				s.hasmvd=false
+				s.hasatkd=false
 			end
-			_upd=update_aiatk
+			_upd=update_aiturn
 		end
 		if btnp(🅾️) then
 			menuwind.dur=0
@@ -178,40 +187,75 @@ function update_slime()
 end
 
 function update_aiplan()
-	for e in all(slimes) do
-		if not e.ally 
-		and not e.tar then
-			e.tar=gettarget(e)
-			add(utm,e)
+ debug={}
+ c_en=1
+ for b in all(bads) do
+ 	gettarget(b)
+ 	b.path={}
+  local ex,ey=b.x,b.y
+ 	for i=1,b.mr do
+ 	 if i>1 then
+ 	 	ex+=b.path[i-1].x
+ 	 	ey+=b.path[i-1].y
+   end
+ 	 findpath(b,ex,ey)
+ 	end
+ 	b.hasmvd=false
+ 	b.hasatkd=false
+ end
+ _upd=update_aiturn
+end
+
+function update_aiturn()
+ local b=bads[c_en]
+ ani_t=0
+ turn_t=turn_org
+ for p in all(b.path) do
+ 	if p.x==0 and p.y==0 then
+ 		del(b.path,p)
 		end
-	end
-	_upd=update_aimove
+ end
+ if not b.hasmvd then
+ 	moveslime(b,b.path[1].x,b.path[1].y)	
+ else
+  slimeatk(b)
+  add(b.path,"atk")
+ end
+ _upd=update_aimove
 end
 
 function update_aimove()
-	if utm[#utm].tar then
-		enemyturn(utm[#utm])
+ local b=bads[c_en]
+	ani_t=min(ani_t+0.08,1)
+	if b.mov then
+		b:mov()
 	end
-	if #utm==0 then
-	 for e in all(slimes) do
-	 	if not e.ally then
-	 		paintatk(e)
+	
+	turn_t-=1
+	
+	if ani_t==1 and turn_t==0 then
+		del(b.path,b.path[1])
+		if #b.path==0 
+		or b.x==b.tar.x and b.y==b.tar.y then
+		 paintatk(b)
+			b.hasmvd=true
+			b.path={}
+			if c_en==#bads then
+				if b.mov==mov_walk then
+				 _upd=update_game
+				else
+				 _upd=update_aiplan
+				end
+			else		
+			 c_en+=1
+			 _upd=update_aiturn
 			end
-  end
-	 _upd=update_game
+		else
+	 	_upd=update_aiturn
+		end
 	end
 end
 
-function update_aiatk()
-	for e in all(slimes) do
-		if not e.ally 
-		and not e.hasatkd then
-			slimeatk(e)
-			e:mov()
-		end
-	end
-	_upd=update_aiplan
-end
 -->8
 --draw
 function _draw()
@@ -224,6 +268,8 @@ function _draw()
 	foreach(debug,print)
 	cursor(80,4)
 	print("fps:"..stat(7).."/"..stat(8))
+ print("ani:"..ani_t)
+ print("turn:"..turn_t)
 end
 
 function draw_menu()
@@ -234,10 +280,25 @@ end
 function draw_game()
 	cls()
 	map(0,0)
+	for d in all(dmobs) do
+  if sin(time()*8)>0 then
+   drawspr(d.ani,d.x*8,d.y*8,false)
+  end
+  d.dur-=1
+  if d.dur<=0 then
+   del(dmobs,d)
+  end
+ end
 	for s in all(slimes) do
 		drawspr(s.ani,
 		        s.x*8+s.ox,s.y*8+s.oy,
 		        s.flp)
+	end
+	
+	for b in all(bads) do
+		drawspr(b.ani,
+		        b.x*8+b.ox,b.y*8+b.oy,
+		        b.flp)
 	end
 	if (not slctd) drawspr(c_ani,cx*8,cy*8,false)
 	
@@ -245,12 +306,9 @@ function draw_game()
 		oprint8(f.txt,f.x,f.y,f.c,0)
 	end
 	
-	for e in all(slimes) do
-		if not e.ally 
-		or e.ally and e==slctd then
-			if cx==e.x and cy==e.y then
-				drawtarget(e)
-			end
+	for b in all(bads) do
+		if cx==b.x and cy==b.y then
+			drawtarget(b)
 		end
 	end
 	
@@ -380,6 +438,15 @@ function los(x1,y1,x2,y2)
  end
  return true 
 end
+
+function find(table,key)
+	for i in all(table) do
+		if i[key] then
+			return true
+		end
+	end
+	return false
+end
 -->8
 --slimes
 function addslime(typ,_x,_y)
@@ -399,7 +466,8 @@ function addslime(typ,_x,_y)
 	 hp=slime_hp[typ],
 	 hasmvd=false,
 	 hasatkd=false,
-	 ani={}
+	 ani={},
+	 path={}
 	}
 	for i=0,3 do
 		add(s.ani,slime_ani[typ]+i)
@@ -414,6 +482,11 @@ function getslime(x,y)
 	for s in all(slimes) do
 		if s.x==x and s.y==y then
 			return s
+		end
+	end
+	for b in all(bads) do
+		if b.x==x and b.y==y then
+			return b
 		end
 	end
 	return nil
@@ -469,6 +542,16 @@ function slimeatk(s)
 		if target then
 		 addfloat("-"..s.atk,tx*8,ty*8,12)
 			target.hp-=s.atk
+			if target.hp<=0 then
+		  add(dmobs,target)
+		  if target.ally then
+		  	del(slimes,target)
+		  else
+		   del(bads,target)
+		   c_en=1
+    end
+		  target.dur=40
+		 end
 			if (not s.cleave) return 
 		end
 	end
@@ -576,32 +659,31 @@ function gettarget(e)
 	local target,bdst,tdst=nil,99,99
  calcdist(e.x,e.y)
 	for s in all(slimes) do
-		if s.ally then
 		tdst=999
-	  for r in all(e.range) do
-	   local dx,dy=s.x-r[1],s.y-r[2]
-	   if iswalkable(dx,dy,"checkmobs") then
-	   	tdst=distmap[dx][dy]
-    end
-			 if tdst<bdst then
-			  if los(dx,dy,s.x,s.y) then
-				  bdst=tdst
-				  target={x=dx,y=dy}
-				 end
+  for r in all(e.range) do
+   local dx,dy=s.x-r[1],s.y-r[2]
+   if iswalkable(dx,dy,"checkmobs") then
+   	tdst=distmap[dx][dy]
+   end
+		 if tdst<bdst then
+		  if los(dx,dy,s.x,s.y) then
+			  bdst=tdst
+			  target={x=dx,y=dy}
 			 end
-	  end
+		 end
 		end
 	end
-	return target
+	e.tar=target
 end
 
-function findpath(e)
+function findpath(e,ex,ey)
  calcdist(e.tar.x,e.tar.y)
  local bx,by,bdst=0,0,999
 	for i=1,4 do
 	 local dx,dy=dirx[i],diry[i]
-	 local tx,ty=e.x+dx,e.y+dy
-	 if iswalkable(tx,ty,"checkmobs") then
+	 local tx,ty=ex+dx,ey+dy
+	 if iswalkable(tx,ty,"checkmobs") 
+	 and buddycheck(tx,ty) then
 		 local dst=distmap[tx][ty]
 	  if dst<bdst then
 		  bdst=dst
@@ -609,29 +691,23 @@ function findpath(e)
 	  end
 	 end
  end
- moveslime(e,bx,by)
+ add(e.path,{x=bx,y=by})
 end
 
-function enemyturn(e)
- ani_t=min(ani_t+0.05,1)
-	if e.mov then
-		e:mov()
-	end
- 
- if ani_t==1 then
- 	if e.mr<=0
-		or e.x==e.tar.x 
-		and e.y==e.tar.y then
-		 e.mov=nil
-		 e.tar=nil
-			del(utm,e)
-		 e.mr=slime_mov[e.typ]
-		else
-			findpath(e)
-			e.mr-=1
+function buddycheck(dx,dy)
+	for b in all(bads) do
+	 local bx,by=b.x,b.y
+		if #b.path>0 then
+			for p in all(b.path) do
+				bx+=p.x
+				by+=p.y
+			end
+			if bx==dx and by==dy then
+				return false
+			end
 		end
-			ani_t=0
- end
+	end
+	return true
 end
 __gfx__
 0000000000000000ccccccccffffffffffffffffffffffffffffffffcccccccccccccccf00000000ffffffffff8888ffffffffffff8888ffff8888ffff8888ff
@@ -870,7 +946,7 @@ __map__
 0202020202020202020202020202020200000303030303030303030303030303030303030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 020303030303281603030303020202020000030303030303030303030a0c1603030303030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 020303401603040403030303170202020404030316160a030303030325030303170303030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-020303030303020203036003370202020202030303031a2a03030303252b0303030303030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+020303030303020203030303370202020202030303031a2a03030303252b0303030303030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0203185403030203030303703702361637020303030303030303030335170303030303030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 02030303030302030303600337023616370203030a3a03030a3a03031603030303032c030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 02160358030303031603043839020404020203031a2a1a032a2a030325030303030303030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
