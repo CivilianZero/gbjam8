@@ -757,6 +757,7 @@ function gettarget(e)
 		 end
 		end
 	end
+	add(debug,target.x.."/"..target.y)
 	e.tar=target
 end
 
