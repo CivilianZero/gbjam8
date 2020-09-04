@@ -95,7 +95,7 @@ function game_start()
  winds,menuwind={},{},{},{},nil
  
  distmap=blankmap(-1)
- showtut(2)
+ showtut(1)
  c_en=1
 	_upd,_drw=update_tutorial,draw_game
 end
