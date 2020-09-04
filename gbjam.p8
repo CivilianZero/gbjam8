@@ -25,7 +25,7 @@ function _init()
  
  --spear slime currently has
  --shield slime sprite⬇️
- slime_name={"sword","shield","knight","thief","","","bunny","dragon"}
+ slime_name={"sword slime","shield slime","knight slime","thief slime","","","desert demon","sand dragon"}
  slime_ani={64,80,84,88,68,72,96,112}
  slime_hp={3,4,2,3,0,0,2,3}
  slime_atk={2,1,4,2,0,0,1,2}
@@ -464,6 +464,7 @@ function addslime(typ,_x,_y)
 	 cleave=slime_cleave[typ],
 	 atk=slime_atk[typ],
 	 hp=slime_hp[typ],
+	 maxhp=slime_hp[typ],
 	 hasmvd=false,
 	 hasatkd=false,
 	 ani={},
@@ -580,6 +581,12 @@ function movecursor(i)
 	and inbounds(destx,desty) then
 	 cx=destx
 	 cy=desty
+		local is_slime=getslime(cx,cy)	
+		if is_slime then
+			showstats(is_slime)
+		elseif statswind then
+			hidestats()
+		end
 	end
 end
 
@@ -606,27 +613,29 @@ function doburst()
 	end
 end
 
-function addwind(_x,_y,_w,_h,_txt)
+function addwind(_x,_y,_w,_h,_txt,_col,_tcol)
  local w={x=_x,
           y=_y,
           w=_w,
           h=_h,
-          txt=_txt}
+          txt=_txt,
+		  col=_col,
+		  tcol=_tcol}
  add(winds,w)
  return w
 end
 
 function drawind()
  for w in all(winds) do
-  local wx,wy,ww,wh=w.x,w.y,w.w,w.h
-  rectfill2(wx,wy,ww,wh,0)
+  local wx,wy,ww,wh,wc,tc=w.x,w.y,w.w,w.h,w.col,w.tcol
+  rectfill2(wx,wy,ww,wh,wc)
   rect(wx+1,wy+1,wx+ww-2,wy+wh-2,6)
   wx+=4
   wy+=4
   clip(wx,wy,ww-8,wh-8)
   for i=1,#w.txt do
    local txt=w.txt[i]
-   print(txt,wx,wy,6)
+   print(txt,wx,wy,tc)
    wy+=6
   end
   clip()
@@ -650,8 +659,23 @@ function drawind()
 end
 
 function showmenu()
-	menuwind=addwind(36,50,54,13,{"end turn?"})
+	menuwind=addwind(36,50,54,13,{"end turn?"},0,6)
  menuwind.butt=true
+end
+
+function showstats(ent)
+  local wcol = 8
+  if ent.ally then
+    wcol = 1
+  end
+  ntext = ent.name
+  htext = "Health " .. ent.hp .. "/" .. ent.maxhp
+	statswind=addwind(4,84,100,40,{ntext,"--------",htext},wcol,15);
+end
+
+function hidestats()
+  statswind.dur=0
+  statswind=nil
 end
 -->8
 --mechanics
