@@ -582,10 +582,11 @@ function movecursor(i)
 	 cx=destx
 	 cy=desty
 		local is_slime=getslime(cx,cy)	
+    if statswind then
+			hidestats()
+     end
 		if is_slime then
 			showstats(is_slime)
-		elseif statswind then
-			hidestats()
 		end
 	end
 end
@@ -666,11 +667,16 @@ end
 function showstats(ent)
   local wcol = 8
   if ent.ally then
-    wcol = 1
+    if ent.hasmvd then
+      wcol = 12 
+    else
+      wcol = 1
+    end
   end
   ntext = ent.name
   htext = "Health " .. ent.hp .. "/" .. ent.maxhp
-	statswind=addwind(4,84,100,40,{ntext,"--------",htext},wcol,15);
+  amtext = "Attack " .. ent.atk .. "  Move " .. ent.mr
+	statswind=addwind(4,84,100,40,{ntext,"--------",htext,amtext},wcol,15);
 end
 
 function hidestats()
