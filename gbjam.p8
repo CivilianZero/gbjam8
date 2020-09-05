@@ -7,36 +7,35 @@ function _init()
  t=0
  turn_org=30
  turn_t=turn_org
- 
- dirx,diry={-1,1,0,0,1,1,-1,-1}
-          ,{0,0,-1,1,-1,1,1,-1}
+
+ dirx,diry={-1,1,0,0,1,1,-1,-1},{0,0,-1,1,-1,1,1,-1}
  current_level=1
  --level-opedia
  levels={
- {
- -- slime and enemy spawns go here??
-  name="highway",
-  x=0,
-  tutorial={"   protect your slime", "tribe as they journey", "across the sjrraka", "desert with their", "sacred tablets!"}
- },
- {
-  name="dunes",
-  x=17,
+  {
+   -- slime and enemy spawns go here??
+   name="highway",
+   x=0,
+   tutorial={"   protect your slime", "tribe as they journey", "across the sjrraka", "desert with their", "sacred tablets!"}
+  },
+  {
+   name="dunes",
+   x=17,
    tutorial={"","  the shield slime", "pushes enemies back", "when it attacks!"}
- },
- {
-  name="island hopping",
-  x=34,
-  tutorial={"","hey hot momma"}
- },
- {
-  name="fortress",
-  x=51,
-  tutorial={"","sweet berry wine!"}
- },
-  }
- 
- 
+  },
+  {
+   name="island hopping",
+   x=34,
+   tutorial={"","hey hot momma"}
+  },
+  {
+   name="fortress",
+   x=51,
+   tutorial={"","sweet berry wine!"}
+  },
+ }
+
+
  --slime-opedia
  --friendly: 1-??
  --enemies: ??-??
@@ -45,23 +44,23 @@ function _init()
  --knight slime: type 3
  --thief slime: type 4
  --?? slime: type 5
- --?? slime: type 6
+ --tablet: type 6
  --bunny enemy: type 7
  --dragon enemy: type 8
- 
+
  --spear slime currently has
  --shield slime sprite⬇️
- slime_name={"sword slime","shield slime","knight slime","thief slime","","","desert demon","sand dragon","salt snake", "dune hound"}
+ slime_name={"sword slime","shield slime","knight slime","thief slime","","tablet","desert demon","sand dragon","salt snake", "dune hound"}
  slime_ani={64,80,84,88,68,72,96,112,116,100}
  slime_hp={12,20,16,8,0,0,12,24,5,8}
- slime_atk={4,2,6,12,0,0,6,8,3,4}
+ slime_atk={4,2,6,12,0,10,6,8,3,4}
  slime_range={
   {{1,0},{1,-1},{1,1}},
   {{1,0}},
   {{0,1},{0,-1}},
   {{-1,0}},
   {},
-  {},
+  {{0,0}},
   {{-1,1},{-1,0},{0,1}},
   {{-1,0},{-2,0},{-3,0},{-4,0},{-1,1},{-1,-1}},
   {{-1,0}},
@@ -78,56 +77,66 @@ function _init()
   true
  }
  slime_mov={4,3,6,4,1,0,4,4,2,5}
- 
+
  debug={}
 
---	menu_init()
+ --	menu_init()
  game_start()
 end
 
 function menu_init()
-	_upd,_drw=update_menu
-	         ,draw_menu
+ _upd,_drw=update_menu
+ ,draw_menu
 end
 
 function game_start()
  c_ani,cx,cy={48,49,50,51},5,5
- 
+
  slimes={}
+ tablets={}
  bads={}
  dmobs={}
- 
+
  spawnthings() 			
- 
+
  ani_t,slctd,mvdist=0,nil,0
- 
+
  locstore,floats,movcursor,
  winds,menuwind={},{},{},{},nil
- 
+
  distmap=blankmap(-1)
  showtut(1)
  c_en=1
-	_upd,_drw=update_tutorial,draw_game
+ _upd,_drw=update_tutorial,draw_game
 end
 
 function spawnthings()
-	for x=0,15 do
- 	for y=0,15 do
- 		for i=1,#slime_ani do
- 			if mget(x,y)==slime_ani[i] then
- 			 addslime(i,x,y)
- 			 mset(x,y,3)
-			 end
-			end
-		end
+ for x=0,15 do
+  for y=0,15 do
+   for i=1,#slime_ani do
+    if mget(x,y)==slime_ani[i] then
+     addslime(i,x,y)
+     mset(x,y,3)
+    end
+   end
+  end
  end
- 
+
  for s in all(slimes) do
- 	if not s.ally then
- 		add(bads,s)
- 		del(slimes,s)
-		end
+  if not s.ally then
+   add(bads,s)
+   del(slimes,s)
+  end
  end
+
+ for s in all(slimes) do
+  if s.typ==6 then
+   add(tablets,s)
+   del(slimes,s)
+  end
+ end
+
+ tablettarget()
 end
 
 -->8
@@ -139,94 +148,108 @@ function _update60()
 end
 
 function update_menu()
-	if (btn(❎)) game_start()
+ if (btn(❎)) game_start()
 end
 
 function update_tutorial() 
-	if btnp(❎) then
-	tutwind.dur=0
-	tutwind=nil
+ if btnp(❎) then
+  tutwind.dur=0
+  tutwind=nil
   _upd = update_aiplan
  end
 end
 
 function update_game()
  c_en=1
-	if menuwind then
-		if btnp(❎) then
-			menuwind.dur=0
-			menuwind=nil
-			for s in all(slimes) do
-				s.hasmvd=false
-				s.hasatkd=false
-			end
-			_upd=update_aiturn
-		end
-		if btnp(🅾️) then
-			menuwind.dur=0
-			menuwind=nil
-		end
-	else
-	 for i=0,3 do
-			if btnp(i) then
-			 movecursor(i)
-			end
-		end
-	
-		if btnp(❎) then
-			local is_slime=getslime(cx,cy)	
-			if not slctd 
-			and is_slime and is_slime.ally
-			and not is_slime.hasmvd then
-		 	slctd=is_slime
-		 	locstore[1],locstore[2],mvdist=
-		 	 slctd.x,slctd.y,slctd.mr
-	  elseif slctd 
-	  and not slctd.hasatkd then
-	   slimeatk(slctd)
+ if menuwind then
+  if btnp(❎) then
+   menuwind.dur=0
+   menuwind=nil
+   for s in all(slimes) do
+    s.hasmvd=false
+    s.hasatkd=false
+   end
+   _upd=update_aiturn
+  end
+  if btnp(🅾️) then
+   menuwind.dur=0
+   menuwind=nil
+  end
+ else
+  for i=0,3 do
+   if btnp(i) then
+    movecursor(i)
+   end
+  end
+
+  if btnp(❎) then
+   local is_slime=getslime(cx,cy)	
+   if not slctd and is_slime and is_slime.ally and not is_slime.hasmvd then
+    slctd=is_slime
+    locstore[1],locstore[2],mvdist=
+    slctd.x,slctd.y,slctd.mr
+   elseif slctd and not slctd.hasatkd then
+    slimeatk(slctd)
     slctd.hasmvd=true
-	   _upd=update_slime
-	  else
-	   _upd=update_slime
-			end
-		end
-		
-		if btnp(🅾️) then
-			if slctd then
-				if mvdist<slctd.mr then
-				 slctd.x,slctd.y=
-				  locstore[1],locstore[2]
-			  cx,cy,mvdist=slctd.x,slctd.y,
-			               slctd.mr
-			 else
-			  slctd=nil
-			 end
-			else
-			 showmenu()
-			end
-		end
-	end
+    _upd=update_slime
+   else
+    _upd=update_slime
+   end
+  end
+
+  if btnp(🅾️) then
+   if slctd then
+    if mvdist<slctd.mr then
+     slctd.x,slctd.y=
+     locstore[1],locstore[2]
+     cx,cy,mvdist=slctd.x,slctd.y,
+     slctd.mr
+    else
+     slctd=nil
+    end
+   else
+    showmenu()
+   end
+  end
+ end
+end
+
+function update_tablet()
+ ani_t=min(ani_t+0.08,1)
+ for t in all(tablets) do
+  if t.mov then
+   t:mov()
+  end
+ end
+ 
+ turn_t-=1
+
+ if ani_t==1 and turn_t==0 then
+  ani_t=0
+  turn_t=turn_org
+  _upd=update_game
+ end
 end
 
 function update_slime()
  ani_t=min(ani_t+0.08,1)
  for s in all(slimes) do
- 	if s.mov then
- 	 s.atkpaint={}
- 		s:mov()
-		end
+  if s.mov then
+   s.atkpaint={}
+   s:mov()
+  end
  end
- 
+
  if ani_t==1 then
   for s in all(slimes) do
    if s.mov==mov_bump then
     s.hasatkd=true
     slctd=nil
    end
-  	s.mov=nil
-  	paintatk(s)
+   s.mov=nil
+   paintatk(s)
   end
-  _upd=update_game
+  _upd=update_aimove
  end
 end
 
@@ -234,18 +257,23 @@ function update_aiplan()
  debug={}
  c_en=1
  for b in all(bads) do
- 	gettarget(b)
- 	b.path={}
+  b.tar=gettarget(b)
+  b.path={}
   local ex,ey=b.x,b.y
- 	for i=1,b.mr do
- 	 if i>1 then
- 	 	ex+=b.path[i-1].x
- 	 	ey+=b.path[i-1].y
+  for i=1,b.mr do
+   if i>1 then
+    ex+=b.path[i-1].x
+    ey+=b.path[i-1].y
    end
- 	 findpath(b,ex,ey)
- 	end
- 	b.hasmvd=false
- 	b.hasatkd=false
+   findpath(b,ex,ey)
+  end
+  b.hasmvd=false
+  b.hasatkd=false
+ end
+
+ for t in all(tablets) do
+  findpath(t,t.x,t.y)
+  t.hasmvd=false
  end
  _upd=update_aiturn
 end
@@ -255,76 +283,81 @@ function update_aiturn()
  ani_t=0
  turn_t=turn_org
  for p in all(b.path) do
- 	if p.x==0 and p.y==0 then
- 		del(b.path,p)
-		end
+  if p.x==0 and p.y==0 then
+   del(b.path,p)
+  end
  end
  if not b.hasmvd then
- 	moveslime(b,b.path[1].x,b.path[1].y)	
+  moveslime(b,b.path[1].x,b.path[1].y)	
  else
   slimeatk(b)
   add(b.path,"atk")
  end
- _upd=update_aimove
+ for t in all(tablets) do
+  if not t.hasmvd then
+   moveslime(t,t.path[1].x,t.path[1].y)
+  end
+ end
+ _upd=update_tablet
 end
 
 function update_aimove()
  local b=bads[c_en]
-	ani_t=min(ani_t+0.08,1)
-	if b.mov then
-		b:mov()
-	end
-	
-	turn_t-=1
-	
-	if ani_t==1 and turn_t==0 then
-		del(b.path,b.path[1])
-		if #b.path==0 
-		or b.x==b.tar.x and b.y==b.tar.y then
-		 paintatk(b)
-			b.hasmvd=true
-			b.path={}
-			if c_en==#bads then
-				if b.mov==mov_walk then
-				 _upd=update_game
-				else
-				 _upd=update_aiplan
-				end
-			else		
-			 c_en+=1
-			 _upd=update_aiturn
-			end
-		else
-	 	_upd=update_aiturn
-		end
-	end
+ ani_t=min(ani_t+0.08,1)
+ if b.mov then
+  b:mov()
+ end
+
+ turn_t-=1
+
+ if ani_t==1 and turn_t==0 then
+  del(b.path,b.path[1])
+  if #b.path==0 
+  or b.x==b.tar.x and b.y==b.tar.y then
+   paintatk(b)
+   b.hasmvd=true
+   b.path={}
+   if c_en==#bads then
+    if b.mov==mov_walk then
+     _upd=update_game
+    else
+     _upd=update_aiplan
+    end
+   else		
+    c_en+=1
+    _upd=update_aiturn
+   end
+  else
+   _upd=update_aiturn
+  end
+ end
 end
 
 -->8
 --draw
 function _draw()
  palt(0,false)
-	palt(6,true)
+ palt(6,true)
  _drw()
  drawind()
  color(8)
  cursor(4,4)
-	foreach(debug,print)
-	cursor(80,4)
-	print("fps:"..stat(7).."/"..stat(8))
+ foreach(debug,print)
+ cursor(80,4)
+ print("fps:"..stat(7).."/"..stat(8))
  print("ani:"..ani_t)
  print("turn:"..turn_t)
 end
 
 function draw_menu()
  cls()
-	print("press ❎ to start",31,63,7)
+ print("press ❎ to start",31,63,7)
 end
 
 function draw_game()
-	cls()
-	map(levels[current_level].x,0)
-	for d in all(dmobs) do
+ cls()
+ map(levels[current_level].x,0)
+ for d in all(dmobs) do
   if sin(time()*8)>0 then
    drawspr(d.ani,d.x*8,d.y*8,false)
   end
@@ -333,66 +366,66 @@ function draw_game()
    del(dmobs,d)
   end
  end
-	for s in all(slimes) do
-		drawspr(s.ani,
-		        s.x*8+s.ox,s.y*8+s.oy,
-		        s.flp)
-	end
-	
-	for b in all(bads) do
-		drawspr(b.ani,
-		        b.x*8+b.ox,b.y*8+b.oy,
-		        b.flp)
-	end
-	if (not slctd) drawspr(c_ani,cx*8,cy*8,false)
-	
-	for f in all(floats) do
-		oprint8(f.txt,f.x,f.y,f.c,0)
-	end
-	
-	for b in all(bads) do
-		if cx==b.x and cy==b.y then
-			drawtarget(b)
-		end
-	end
-	
---visualize distance map test
---	for x=0,15 do
---		for y=0,15 do
---			if distmap[x][y]>0 then
---				print(distmap[x][y],x*8,y*8,8)
---			end
---		end
---	end
+ for s in all(slimes) do
+  drawspr(s.ani,
+  s.x*8+s.ox,s.y*8+s.oy,
+  s.flp)
+ end
+
+ for b in all(bads) do
+  drawspr(b.ani,
+  b.x*8+b.ox,b.y*8+b.oy,
+  b.flp)
+ end
+ if (not slctd) drawspr(c_ani,cx*8,cy*8,false)
+
+ for f in all(floats) do
+  oprint8(f.txt,f.x,f.y,f.c,0)
+ end
+
+ for b in all(bads) do
+  if cx==b.x and cy==b.y then
+   drawtarget(b)
+  end
+ end
+
+ --visualize distance map test
+ --	for x=0,15 do
+ --		for y=0,15 do
+ --			if distmap[x][y]>0 then
+ --				print(distmap[x][y],x*8,y*8,8)
+ --			end
+ --		end
+ --	end
 end
 
 function drawspr(_spr,_x,_y,_flip)
-	spr(_spr[flr(t/15)%#_spr+1],_x,_y,1,1,_flip)
+ spr(_spr[flr(t/15)%#_spr+1],_x,_y,1,1,_flip)
 end
 
 function drawtarget(e)
-	for t in all(e.atkpaint) do
-		drawspr({32,33,34,35},t.x*8,t.y*8,false)
-	end
+ for t in all(e.atkpaint) do
+  drawspr({32,33,34,35},t.x*8,t.y*8,false)
+ end
 end
 -->8
 --utility
 function iswalkable(x,y,mode)
  local mode=mode or ""
- 
+
  if inbounds(x,y) then
   local tle=mget(x,y)
   if mode=="sight" then
    return not fget(tle,2)
   else
-	  if not fget(tle,0) then
-	   if mode=="checkmobs" then
-	    local slime=getslime(x,y)
-	    return not slime
-	   end
-	   return true
-	  end
-	 end
+   if not fget(tle,0) then
+    if mode=="checkmobs" then
+     local slime=getslime(x,y)
+     return not slime
+    end
+    return true
+   end
+  end
  end
  return false
 end
@@ -420,7 +453,7 @@ end
 function blankmap(_dflt)
  local ret={} 
  if (_dflt==nil) _dflt=0
- 
+
  lx = levels[current_level].x
  for x=lx,lx+15 do
   ret[x]={}
@@ -433,29 +466,29 @@ end
 
 function calcdist(tx,ty)
  local cand,step={},0
-	distmap=blankmap(-1)
-	add(cand,{x=tx,y=ty})
-	distmap[tx][ty]=0
-	repeat
-		step+=1
-		candnew={}
-		for c in all(cand) do
-			for d=1,4 do
-				local dx=c.x+dirx[d]
-				local dy=c.y+diry[d]
-					if iswalkable(dx,dy,"checkmobs") and distmap[dx][dy]==-1 then
-						distmap[dx][dy]=step
-						add(candnew,{x=dx,y=dy})
-					end
-			end
-		end
-		cand=candnew
-	until #cand==0
+ distmap=blankmap(-1)
+ add(cand,{x=tx,y=ty})
+ distmap[tx][ty]=0
+ repeat
+  step+=1
+  candnew={}
+  for c in all(cand) do
+   for d=1,4 do
+    local dx=c.x+dirx[d]
+    local dy=c.y+diry[d]
+    if iswalkable(dx,dy,"checkmobs") and distmap[dx][dy]==-1 then
+     distmap[dx][dy]=step
+     add(candnew,{x=dx,y=dy})
+    end
+   end
+  end
+  cand=candnew
+ until #cand==0
 end
 
 function los(x1,y1,x2,y2)
  local frst,sx,sy,dx,dy=true
- 
+
  if dist(x1,y1,x2,y2)==1 then return true end
  if x1<x2 then
   sx,dx=1,x2-x1
@@ -468,7 +501,7 @@ function los(x1,y1,x2,y2)
   sy,dy=-1,y1-y2
  end
  local err,e2=dx-dy
- 
+
  while not(x1==x2 and y1==y2) do
   if not frst and iswalkable(x1,y1,"sight")==false then return false end
   e2,frst=err+err,false
@@ -485,122 +518,122 @@ function los(x1,y1,x2,y2)
 end
 
 function find(table,key)
-	for i in all(table) do
-		if i[key] then
-			return true
-		end
-	end
-	return false
+ for i in all(table) do
+  if i[key] then
+   return true
+  end
+ end
+ return false
 end
 -->8
 --slimes
 function addslime(typ,_x,_y)
-	local s={
-	 typ=typ,
-	 name=slime_name[typ],
-	 x=_x,
-	 y=_y,
-	 ox=0,
-	 oy=0,
-	 flp=false,
-	 mr=slime_mov[typ],
-	 mov=nil,
-	 range=slime_range[typ],
-	 cleave=slime_cleave[typ],
-	 atk=slime_atk[typ],
-	 hp=slime_hp[typ],
-	 maxhp=slime_hp[typ],
-	 hasmvd=false,
-	 hasatkd=false,
-	 ani={},
-	 path={}
-	}
-	for i=0,3 do
-		add(s.ani,slime_ani[typ]+i)
-	end
-	s.ally=s.ani[1]<=92 and true or false
-	if (not s.ally) s.flp=true
-	paintatk(s)
-	add(slimes,s)
+ local s={
+  typ=typ,
+  name=slime_name[typ],
+  x=_x,
+  y=_y,
+  ox=0,
+  oy=0,
+  flp=false,
+  mr=slime_mov[typ],
+  mov=nil,
+  range=slime_range[typ],
+  cleave=slime_cleave[typ],
+  atk=slime_atk[typ],
+  hp=slime_hp[typ],
+  maxhp=slime_hp[typ],
+  hasmvd=false,
+  hasatkd=false,
+  ani={},
+  path={}
+ }
+ for i=0,3 do
+  add(s.ani,slime_ani[typ]+i)
+ end
+ s.ally=s.ani[1]<=92 and true or false
+ if (not s.ally) s.flp=true
+ paintatk(s)
+ add(slimes,s)
 end
 
 function getslime(x,y)
-	for s in all(slimes) do
-		if s.x==x and s.y==y then
-			return s
-		end
-	end
-	for b in all(bads) do
-		if b.x==x and b.y==y then
-			return b
-		end
-	end
-	return nil
+ for s in all(slimes) do
+  if s.x==x and s.y==y then
+   return s
+  end
+ end
+ for b in all(bads) do
+  if b.x==x and b.y==y then
+   return b
+  end
+ end
+ return nil
 end
 
 function moveslime(s,dx,dy)
-	s.x+=dx
-	s.y+=dy
-	
-	slimeflip(s,dx)
-	s.sox,s.soy=-dx*8,-dy*8
-	s.ox,s.oy=s.sox,s.soy
-	s.mov=mov_walk
+ s.x+=dx
+ s.y+=dy
+
+ slimeflip(s,dx)
+ s.sox,s.soy=-dx*8,-dy*8
+ s.ox,s.oy=s.sox,s.soy
+ s.mov=mov_walk
 end
 
 function slimebump(s,dx,dy)
-	slimeflip(s,dx)
-	s.sox,s.soy=dx*8,dy*8
-	s.ox,s.oy=0,0
-	s.mov=mov_bump
+ slimeflip(s,dx)
+ s.sox,s.soy=dx*8,dy*8
+ s.ox,s.oy=0,0
+ s.mov=mov_bump
 end
 
 function mov_walk(s)
  local tme=1-ani_t
-	s.ox=s.sox*tme
-	s.oy=s.soy*tme
+ s.ox=s.sox*tme
+ s.oy=s.soy*tme
 end
 
 function mov_bump(s)
  local tme=ani_t>0.5 
-       and 1-ani_t 
-       or ani_t
+ and 1-ani_t 
+ or ani_t
  s.ox=s.sox*tme
-	s.oy=s.soy*tme
+ s.oy=s.soy*tme
 end
 
 function slimeflip(s,dx)
-	s.flp=dx==0 and s.flp or dx<0
+ s.flp=dx==0 and s.flp or dx<0
 end
 
 function slimeatk(s)
  local sr=s.range
  local srx=sr[1][1]
  slimeflip(s,srx)
-	s.sox,s.soy=srx*8,sr[1][2]*8
-	s.ox,s.oy=0,0
-	s.mov=mov_bump
-	ani_t=0
-	s.hasatkd=true
-	for a in all(sr) do
-	 local tx,ty=s.x+a[1],s.y+a[2]
-	 local target=getslime(tx,ty)
-		if target then
-		 addfloat("-"..s.atk,tx*8,ty*8,12)
-			target.hp-=s.atk
-			if target.hp<=0 then
-		  add(dmobs,target)
-		  if target.ally then
-		  	del(slimes,target)
-		  else
-		   del(bads,target)
-		   c_en=1
+ s.sox,s.soy=srx*8,sr[1][2]*8
+ s.ox,s.oy=0,0
+ s.mov=mov_bump
+ ani_t=0
+ s.hasatkd=true
+ for a in all(sr) do
+  local tx,ty=s.x+a[1],s.y+a[2]
+  local target=getslime(tx,ty)
+  if target then
+   addfloat("-"..s.atk,tx*8,ty*8,12)
+   target.hp-=s.atk
+   if target.hp<=0 then
+    add(dmobs,target)
+    if target.ally then
+     del(slimes,target)
+    else
+     del(bads,target)
+     c_en=1
     end
-		  target.dur=40
-		 end
-			if (not s.cleave) return 
-		end
-	end
+    target.dur=40
+   end
+   if (not s.cleave) return 
+  end
+ end
 end
 
 function paintatk(e)
@@ -612,29 +645,29 @@ end
 -->8
 --ui/cursor
 function movecursor(i)
-	local dx,dy=dirx[i+1],diry[i+1]
-	local destx,desty=cx+dx,cy+dy
-	if slctd and mvdist>0 then
-		if iswalkable(destx,desty,"checkmobs") then
-		 cx,cy=destx,desty
-		 moveslime(slctd,dx,dy)
-	  ani_t=0
-	  _upd=update_slime
-		 mvdist-=1
-		end			 
-	elseif not slctd 
-	and inbounds(destx,desty) then
-	 cx=destx
-	 cy=desty
-		local is_slime=getslime(cx,cy)	
-    if statswind then
-			hidestats()
-     end
-		if is_slime then
-			showstats(is_slime)
-		end
-	end
+ local dx,dy=dirx[i+1],diry[i+1]
+ local destx,desty=cx+dx,cy+dy
+ if slctd and mvdist>0 then
+  if iswalkable(destx,desty,"checkmobs") then
+   cx,cy=destx,desty
+   moveslime(slctd,dx,dy)
+   ani_t=0
+   _upd=update_slime
+   mvdist-=1
+  end			 
+ elseif not slctd and inbounds(destx,desty) then
+  cx=destx
+  cy=desty
+  local is_slime=getslime(cx,cy)	
+  if statswind then
+   hidestats()
+  end
+  if is_slime then
+   showstats(is_slime)
+  end
+ end
 end
+
 
 function addfloat(_txt,_x,_y,_c)
  add(floats,{txt=_txt,x=_x,y=_y,c=_c,ty=_y-10,t=0})
@@ -650,23 +683,14 @@ function dofloats()
  end
 end
 
-function doburst()
-	for b in all(bursts) do
-		b.t+=1
-		if b.t>70 then
-			del(bursts,b)
-		end
-	end
-end
-
 function addwind(_x,_y,_w,_h,_txt,_col,_tcol)
  local w={x=_x,
-          y=_y,
-          w=_w,
-          h=_h,
-          txt=_txt,
-		  col=_col,
-		  tcol=_tcol}
+ y=_y,
+ w=_w,
+ h=_h,
+ txt=_txt,
+ col=_col,
+ tcol=_tcol}
  add(winds,w)
  return w
 end
@@ -685,7 +709,7 @@ function drawind()
    wy+=6
   end
   clip()
- 
+
   if w.dur then
    w.dur-=1
    if w.dur<=0 then
@@ -705,94 +729,116 @@ function drawind()
 end
 
 function showmenu()
-	menuwind=addwind(36,50,54,13,{"end turn?"},0,6)
+ menuwind=addwind(36,50,54,13,{"end turn?"},0,6)
  menuwind.butt=true
 end
 
 function showtut(i)
-	tutwind=addwind(8,36,100,40,levels[i].tutorial,1,15)
-  tutwind.butt=true
+ tutwind=addwind(8,36,100,40,levels[i].tutorial,1,15)
+ tutwind.butt=true
 end
 
 function showstats(ent)
-  local wcol = 8
-  local winy = 92
-  if ent.y > 8 then
-    winy = 2
+ local wcol = 8
+ local winy = 92
+ if ent.y > 8 then
+  winy = 2
+ end
+ if ent.ally then
+  if ent.hasmvd then
+   wcol = 12 
+  else
+   wcol = 1
   end
-  if ent.ally then
-    if ent.hasmvd then
-      wcol = 12 
-    else
-      wcol = 1
-    end
-  end
-  ntext = ent.name
-  htext = "Health " .. ent.hp .. "/" .. ent.maxhp
-  amtext = "Attack " .. ent.atk .. "  Move " .. ent.mr
-	statswind=addwind(2,winy,100,34,{ntext,"--------",htext,amtext},wcol,15);
+ end
+ ntext = ent.name
+ htext = "Health " .. ent.hp .. "/" .. ent.maxhp
+ amtext = "Attack " .. ent.atk .. "  Move " .. ent.mr
+ statswind=addwind(2,winy,100,34,{ntext,"--------",htext,amtext},wcol,15);
 end
 
 function hidestats()
-  statswind.dur=0
-  statswind=nil
+ statswind.dur=0
+ statswind=nil
 end
 -->8
 --mechanics
+
 function gettarget(e)
-	local target,bdst,tdst=nil,99,99
+ local target,bdst,tdst=nil,99,99
  calcdist(e.x,e.y)
-	for s in all(slimes) do
-		tdst=999
+ for s in all(slimes) do
+  tdst=999
   for r in all(e.range) do
    local dx,dy=s.x-r[1],s.y-r[2]
    if iswalkable(dx,dy,"checkmobs") then
-   	tdst=distmap[dx][dy]
+    tdst=distmap[dx][dy]
    end
-		 if tdst<bdst then
-		  if los(dx,dy,s.x,s.y) then
-			  bdst=tdst
-			  target={x=dx,y=dy}
-			 end
-		 end
-		end
-	end
-	add(debug,target.x.."/"..target.y)
-	e.tar=target
+   if tdst<bdst then
+    if los(dx,dy,s.x,s.y) then
+     bdst=tdst
+     target={x=dx,y=dy}
+    end
+   end
+  end
+ end
+ return target
 end
 
 function findpath(e,ex,ey)
  calcdist(e.tar.x,e.tar.y)
  local bx,by,bdst=0,0,999
-	for i=1,4 do
-	 local dx,dy=dirx[i],diry[i]
-	 local tx,ty=ex+dx,ey+dy
-	 if iswalkable(tx,ty,"checkmobs") 
-	 and buddycheck(tx,ty) then
-		 local dst=distmap[tx][ty]
-	  if dst<bdst then
-		  bdst=dst
-		  bx,by=dx,dy
-	  end
-	 end
+ for i=1,4 do
+  local dx,dy=dirx[i],diry[i]
+  local tx,ty=ex+dx,ey+dy
+  if iswalkable(tx,ty,"checkmobs") and buddycheck(tx,ty) then
+   local dst=distmap[tx][ty]
+   if dst<bdst then
+    bdst=dst
+    bx,by=dx,dy
+   end
+  end
  end
  add(e.path,{x=bx,y=by})
 end
 
 function buddycheck(dx,dy)
-	for b in all(bads) do
-	 local bx,by=b.x,b.y
-		if #b.path>0 then
-			for p in all(b.path) do
-				bx+=p.x
-				by+=p.y
-			end
-			if bx==dx and by==dy then
-				return false
-			end
-		end
-	end
-	return true
+ for b in all(bads) do
+  local bx,by=b.x,b.y
+  if #b.path>0 then
+   for p in all(b.path) do
+    bx+=p.x
+    by+=p.y
+   end
+   if bx==dx and by==dy then
+    return false
+   end
+  end
+ end
+ return true
+end
+
+function tablettarget()
+ for t in all(tablets) do
+  t.tar.x=15
+  t.tar.y=t.y
+ end
+end
+
+function wincheck()
+ for t in all(tablets) do
+  if not t.y==15 then
+   return false
+  end
+ end
+ return true
+end
+
+function losecheck()
+ if #tablets==0 or #slimes==0 then
+  return true
+ end
+ return false
 end
 __gfx__
 0000000000000000ccccccccffffffff4444444444444444ffffffffcccccccccccccccf00000000ffffffffff7777ffffffffffff7777ffff7777ffff7777ff
@@ -1054,7 +1100,7 @@ __label__
 11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
 
 __gff__
-0000010000000001010001010101010100000000010100000000010100010000000000000101000000000101010000000000000001010000000001000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000010000000001010001010101010100000000010100010000010100010000000000000101000000000101010000000000000001010000000001000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 03030303033b03030303030303033b0309030303030303030303030303030303030002020202020702020202020702020202000303030303030303030303030303030303030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
