@@ -155,7 +155,7 @@ function update_tutorial()
  if btnp(❎) then
   tutwind.dur=0
   tutwind=nil
-  _upd=update_aiplan
+  _upd=update_aiturn
  end
 end
 
@@ -232,9 +232,8 @@ end
 
 function update_tabletplan()
  for t in all(tablets) do
-  findpath(t,t.x,t.y)
+  findpath(t)
   t.hasmvd=false
-  add(debug,"x:"..t.x+t.path[1].x.." y:"..t.y+t.path[1].y)
  end
  _upd=update_tabletmove
 end
@@ -270,52 +269,23 @@ function update_slime()
     slctd=nil
    end
    s.mov=nil
-   paintatk(s)
+   --paintatk(s)
   end
   _upd=update_game
  end
 end
 
-function update_aiplan()
- debug={}
- c_en=1
- for b in all(bads) do
-  local choose=rnd()
-  add(debug,choose)
-  b.tar=gettarget(b,tablets)
-  if not b.tar then
-   b.tar=gettarget(b,slimes)
-  end
-  b.path={}
-  local ex,ey=b.x,b.y
-  for i=1,b.mr do
-   if i>1 then
-    ex+=b.path[i-1].x
-    ey+=b.path[i-1].y
-   end
-   findpath(b,ex,ey)
-  end
-  b.hasmvd=false
-  b.hasatkd=false
- end
-
- _upd=update_aiturn
-end
-
 function update_aiturn()
+ debug={} 
  local b=bads[c_en]
  ani_t=0
  turn_t=turn_org
- for p in all(b.path) do
-  if p.x==0 and p.y==0 then
-   del(b.path,p)
-  end
- end
+ gettarget(b)
+ add(debug,"x:"..b.tar.x.." y:"..b.tar.y)
  if not b.hasmvd then
-  moveslime(b,b.path[1].x,b.path[1].y)	
+  findpath(b)
  else
   slimeatk(b)
-  add(b.path,"atk")
  end
  _upd=update_aimove
 end
@@ -330,22 +300,23 @@ function update_aimove()
  turn_t-=1
 
  if ani_t==1 and turn_t<=0 then
-  del(b.path,b.path[1])
-  if #b.path==0 or b.x==b.tar.x and b.y==b.tar.y then
-   paintatk(b)
+  if b.mr<=0 or b.x==b.tar.x and b.y==b.tar.y then
    b.hasmvd=true
-   b.path={}
+   b.mr=b.mrmax
    if c_en==#bads then
+    c_en=1
     if b.mov==mov_walk then
      _upd=update_tabletplan
     else
-     _upd=update_aiplan
+     _upd=update_aiturn
     end
    else		
     c_en+=1
     _upd=update_aiturn
    end
   else
+   b.mr-=1
+   b.hasmvd=false
    _upd=update_aiturn
   end
  end
@@ -361,7 +332,7 @@ function _draw()
  color(0)
  cursor(4,4)
  foreach(debug,print)
- --cursor(80,4)
+ -- cursor(80,4)
 end
 
 function draw_menu()
@@ -405,19 +376,19 @@ function draw_game()
  end
 
  for b in all(bads) do
-  if cx==b.x and cy==b.y then
-   drawtarget(b)
-  end
+  --if cx==b.x and cy==b.y then
+  drawtarget(b)
+  --end
  end
 
  --visualize distance map test
- --	for x=0,15 do
- --		for y=0,15 do
- --			if distmap[x][y]>0 then
- --				print(distmap[x][y],x*8,y*8,8)
- --			end
- --		end
- --	end
+-- for x=0,15 do
+--  for y=0,15 do
+--   if distmap[x][y]>0 then
+--    print(distmap[x][y],x*8,y*8,8)
+--   end
+--  end
+-- end
 end
 
 function drawspr(_spr,_x,_y,_flip)
@@ -475,8 +446,7 @@ function blankmap(_dflt)
  local ret={} 
  if (_dflt==nil) _dflt=0
 
- lx = levels[current_level].x
- for x=lx,lx+15 do
+ for x=0,15 do
   ret[x]={}
   for y=0,15 do
    ret[x][y]=_dflt
@@ -497,7 +467,7 @@ function calcdist(tx,ty)
    for d=1,4 do
     local dx=c.x+dirx[d]
     local dy=c.y+diry[d]
-    if iswalkable(dx,dy,"checkmobs") and distmap[dx][dy]==-1 then
+    if inbounds(dx,dy) and distmap[dx][dy]==-1 then
      distmap[dx][dy]=step
      add(candnew,{x=dx,y=dy})
     end
@@ -558,6 +528,7 @@ function addslime(typ,_x,_y)
   oy=0,
   flp=false,
   mr=slime_mov[typ],
+  mrmax=slime_mov[typ],
   mov=nil,
   range=slime_range[typ],
   cleave=slime_cleave[typ],
@@ -566,15 +537,14 @@ function addslime(typ,_x,_y)
   maxhp=slime_hp[typ],
   hasmvd=false,
   hasatkd=false,
-  ani={},
-  path={}
+  ani={}
  }
  for i=0,3 do
   add(s.ani,slime_ani[typ]+i)
  end
  s.ally=s.ani[1]<=92 and true or false
  if (not s.ally) s.flp=true
- paintatk(s)
+ --paintatk(s)
  add(slimes,s)
 end
 
@@ -799,35 +769,40 @@ end
 -->8
 --mechanics
 
-function gettarget(e,table)
- local target,bdst,tdst=nil,99,99
+function gettarget(e)
  calcdist(e.x,e.y)
- for s in all(table) do
-  tdst=999
+ local bx,by,bdst,tdst,ttable=0,0,99,99,{}
+ for t in all(tablets) do
+  add(ttable,t)
+ end
+ for s in all(slimes) do
+  add(ttable,s)
+ end
+ -- add more decision logic??
+ for t in all(ttable) do
   for r in all(e.range) do
-   local dx,dy=s.x-r[1],s.y-r[2]
-   if iswalkable(dx,dy,"checkmobs") then
+   local dx,dy=t.x-r[1],t.y-r[2]
+   if iswalkable(dx,dy,"checkmobs") and buddycheck(b,dx,dy) then
     tdst=distmap[dx][dy]
    end
    if tdst<bdst then
-    if los(dx,dy,s.x,s.y) then
+    if los(dx,dy,t.x,t.y) then
      bdst=tdst
-     target={x=dx,y=dy}
+     bx,by=dx,dy
     end
    end
   end
  end
- return target
+ e.tar={x=bx,y=by}
 end
 
-function findpath(e,ex,ey)
- --if (ex==e.tar.x and ey==e.tar.y) return
+function findpath(e)
  calcdist(e.tar.x,e.tar.y)
- local bx,by,bdst=0,0,999
+ local bx,by,bdst=0,0,distmap[e.x][e.y]
  for i=1,4 do
   local dx,dy=dirx[i],diry[i]
-  local tx,ty=ex+dx,ey+dy
-  if iswalkable(tx,ty,"checkmobs") and buddycheck(tx,ty) then
+  local tx,ty=e.x+dx,e.y+dy
+  if iswalkable(tx,ty,"checkmobs") then
    local dst=distmap[tx][ty]
    if dst<bdst then
     bdst=dst
@@ -835,20 +810,13 @@ function findpath(e,ex,ey)
    end
   end
  end
- add(e.path,{x=bx,y=by})
+ moveslime(e,bx,by)
 end
 
-function buddycheck(dx,dy)
+function buddycheck(self,dx,dy)
  for b in all(bads) do
-  local bx,by=b.x,b.y
-  if #b.path>0 then
-   for p in all(b.path) do
-    bx+=p.x
-    by+=p.y
-   end
-   if bx==dx and by==dy then
-    return false
-   end
+  if not b==self and b.tar and dx==b.tar.x and dy==b.tar.y then
+   return false
   end
  end
  return true
