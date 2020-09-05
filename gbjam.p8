@@ -155,7 +155,7 @@ function update_tutorial()
  if btnp(❎) then
   tutwind.dur=0
   tutwind=nil
-  _upd = update_aiplan
+  _upd=update_aiplan
  end
 end
 
@@ -183,8 +183,8 @@ function update_game()
   end
 
   if btnp(❎) then
-   local is_slime=getslime(cx,cy)	
-   if not slctd and is_slime and is_slime.ally and not is_slime.hasmvd then
+   local is_slime=getslime(cx,cy,"slimes")	
+   if not slctd and is_slime and not is_slime.hasmvd then
     slctd=is_slime
     locstore[1],locstore[2],mvdist=
     slctd.x,slctd.y,slctd.mr
@@ -221,12 +221,37 @@ function update_tablet()
    t:mov()
   end
  end
- 
- if ani_t==1 then
+ turn_t-=1
+
+ if ani_t==1 and turn_t==0 then
   ani_t=0
   turn_t=turn_org
-  _upd=update_aimove
+  _upd=update_game
  end
+end
+
+function update_tabletplan()
+ for t in all(tablets) do
+  findpath(t,t.x,t.y)
+  t.hasmvd=false
+  add(debug,"x:"..t.x+t.path[1].x.." y:"..t.y+t.path[1].y)
+ end
+ _upd=update_tabletmove
+end
+
+function update_tabletmove()
+ for t in all(tablets) do
+  if not t.hasmvd then
+   t.hasmvd=true
+   for p in all(t.path) do
+    moveslime(t,p.x,p.y)
+   end
+   t.path={}
+  end
+ end
+ ani_t=0
+ turn_t=turn_org
+ _upd=update_tablet
 end
 
 function update_slime()
@@ -255,6 +280,8 @@ function update_aiplan()
  debug={}
  c_en=1
  for b in all(bads) do
+  local choose=rnd()
+  add(debug,choose)
   b.tar=gettarget(b,tablets)
   if not b.tar then
    b.tar=gettarget(b,slimes)
@@ -272,10 +299,6 @@ function update_aiplan()
   b.hasatkd=false
  end
 
- for t in all(tablets) do
-  findpath(t,t.x,t.y)
-  t.hasmvd=false
- end
  _upd=update_aiturn
 end
 
@@ -294,12 +317,7 @@ function update_aiturn()
   slimeatk(b)
   add(b.path,"atk")
  end
- for t in all(tablets) do
-  if not t.hasmvd then
-   moveslime(t,t.path[1].x,t.path[1].y)
-  end
- end
- _upd=update_tablet
+ _upd=update_aimove
 end
 
 function update_aimove()
@@ -313,14 +331,13 @@ function update_aimove()
 
  if ani_t==1 and turn_t<=0 then
   del(b.path,b.path[1])
-  if #b.path==0 
-  or b.x==b.tar.x and b.y==b.tar.y then
+  if #b.path==0 or b.x==b.tar.x and b.y==b.tar.y then
    paintatk(b)
    b.hasmvd=true
    b.path={}
    if c_en==#bads then
     if b.mov==mov_walk then
-     _upd=update_game
+     _upd=update_tabletplan
     else
      _upd=update_aiplan
     end
@@ -341,13 +358,10 @@ function _draw()
  palt(6,true)
  _drw()
  drawind()
- color(8)
+ color(0)
  cursor(4,4)
  foreach(debug,print)
- cursor(80,4)
- print("fps:"..stat(7).."/"..stat(8))
- print("ani:"..ani_t)
- print("turn:"..turn_t)
+ --cursor(80,4)
 end
 
 function draw_menu()
@@ -564,15 +578,28 @@ function addslime(typ,_x,_y)
  add(slimes,s)
 end
 
-function getslime(x,y)
- for s in all(slimes) do
-  if s.x==x and s.y==y then
-   return s
+function getslime(x,y,mode)
+ if (mode==nil) mode="all"
+
+ if mode=="all" or mode=="slimes" or mode=="player" then
+  for s in all(slimes) do
+   if s.x==x and s.y==y then
+    return s
+   end
   end
  end
- for b in all(bads) do
-  if b.x==x and b.y==y then
-   return b
+ if mode=="all" or mode=="bads" then
+  for b in all(bads) do
+   if b.x==x and b.y==y then
+    return b
+   end
+  end
+ end
+ if mode=="all" or mode=="tablets" or mode=="player" then
+  for t in all(tablets)do
+   if t.x==x and t.y==y then
+    return t
+   end
   end
  end
  return nil
@@ -623,9 +650,10 @@ function slimeatk(s)
  ani_t=0
  s.hasatkd=true
  for a in all(sr) do
+  local typ=s.ally and "bads" or "player"
   local tx,ty=s.x+a[1],s.y+a[2]
   local target=getslime(tx,ty)
-  if target and s.ally and not target.ally or target and not s.ally and target.ally then
+  if target then
    addfloat("-"..s.atk,tx*8,ty*8,12)
    target.hp-=s.atk
    if target.hp<=0 then
@@ -793,6 +821,7 @@ function gettarget(e,table)
 end
 
 function findpath(e,ex,ey)
+ --if (ex==e.tar.x and ey==e.tar.y) return
  calcdist(e.tar.x,e.tar.y)
  local bx,by,bdst=0,0,999
  for i=1,4 do
