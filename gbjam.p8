@@ -286,8 +286,8 @@ function update_game()
     if mvdist<slctd.mr then
      slctd.x,slctd.y=
      locstore[1],locstore[2]
-     cx,cy,mvdist=slctd.x,slctd.y,
-     slctd.mr
+     cx,cy,mvdist=slctd.x,slctd.y,slctd.mr
+     paintatk(slctd)
      slctd=nil
     else
      slctd=nil
@@ -354,7 +354,7 @@ function update_slime()
     slctd=nil
    end
    s.mov=nil
-   --paintatk(s)
+   paintatk(s)
   end
   _upd=update_game
  end
@@ -387,6 +387,7 @@ function update_aimove()
   if b.mr<=0 or b.x==b.tar.x and b.y==b.tar.y then
    b.hasmvd=true
    b.mr=b.mrmax
+   paintatk(b)
    if c_en==#bads then
     c_en=1
     if b.mov==mov_walk then
@@ -481,11 +482,27 @@ function draw_game()
  end
 
  for b in all(bads) do
-  --if cx==b.x and cy==b.y then
-  drawtarget(b)
-  --end
+  if cx==b.x and cy==b.y then
+   drawtarget(b)
+  end
  end
 
+ if slctd then
+  calcdist(slctd.x,slctd.y)
+  for x=0,15 do
+   for y=0,15 do
+    if distmap[x][y]<=mvdist and distmap[x][y]>0 and iswalkable(x,y,"checkmobs")then
+     drawspr({16,17,18,19},x*8,y*8,false)
+    end
+   end
+  end
+ end
+
+ for s in all(slimes) do
+  if cx==s.x and cy==s.y then
+   drawtarget(s)
+  end
+ end
  --visualize distance map test
  -- for x=0,15 do
  --  for y=0,15 do
@@ -595,7 +612,7 @@ function calcdist(tx,ty)
    for d=1,4 do
     local dx=c.x+dirx[d]
     local dy=c.y+diry[d]
-    if inbounds(dx,dy) and distmap[dx][dy]==-1 then
+    if iswalkable(dx,dy) and distmap[dx][dy]==-1 then
      distmap[dx][dy]=step
      add(candnew,{x=dx,y=dy})
     end
@@ -674,7 +691,7 @@ function addslime(typ,_x,_y)
  end
  s.ally=s.ani[1]<=92 and true or false
  if (not s.ally) s.flp=true
- --paintatk(s)
+ paintatk(s)
  add(slimes,s)
 end
 
@@ -1034,14 +1051,14 @@ __gfx__
 007007000dddddd0ccccccccffffffffccccccccccccccccf4fffffffffccccfcccccccf77777777ff877888ff8888ff88888888ff8777ffff877788887778ff
 000000000dddddd0ccccccccffffffffcccccccccccccccc4c4ff444ffffffffcccccccf77777777ff777788ff8888ff87877877ff7777ffff777788887777ff
 0000000000000000ccccccccffffffffccccccccccccccccccc44cccffffffffcccccccf77777777ff8778ffff8888ff78888888ff8778ffff87788ff88778ff
-66666666666666666666666666666666440440c400ccccccffffffffffff8f7fffffffff00000000ff7777ffffffffff00000000ff7777ff0000000000000000
-676666766c6666c6676666766c6666c64404400400000000f7fffffff7f888ff11f111ff00000000ff877877ff87878700000000ff7777ff0000000000000000
-66c66c666676676666c66c66667667664404400400000000ff4ff7ffff8878ff11f111ff00000000ff777777ff87777700000000ff7787ff0000000000000000
-6667c666666c76666667c666666c76664404400400000000ff4fff4ffff88ffff1ff11ff00000000ff877777ff77777700000000ff8888ff0000000000000000
-666c76666667c666666c76666667c6664404400400000000ffffff4ff7f88f7fffffffff00000000f8887878ff87778800000000ff7877ff0000000000000000
-66c66c666676676666c66c66667667664404400400000000fff7ffffff8788ffff1f111f00000000f8788888ff77778800000000ff8888ff0000000000000000
-676666766c6666c6676666766c6666c64404400400000000fff44ffff7f88fffff11f11f00000000ff888888ff87788800000000ff8888ff0000000000000000
-666666666666666666666666666666664404400400000000ffff4fffff887fffffffffff00000000ffffffffff7777ff00000000ff8888ff0000000000000000
+66777766666666666666666666777766440440c400ccccccffffffffffff8f7fffffffff00000000ff7777ffffffffff00000000ff7777ff0000000000000000
+666666666677776666777766666666664404400400000000f7fffffff7f888ff11f111ff00000000ff877877ff87878700000000ff7777ff0000000000000000
+767777676766667667666676767777674404400400000000ff4ff7ffff8878ff11f111ff00000000ff777777ff87777700000000ff7787ff0000000000000000
+767777676767767667677676767777674404400400000000ff4fff4ffff88ffff1ff11ff00000000ff877777ff77777700000000ff8888ff0000000000000000
+767777676767767667677676767777674404400400000000ffffff4ff7f88f7fffffffff00000000f8887878ff87778800000000ff7877ff0000000000000000
+767777676766667667666676767777674404400400000000fff7ffffff8788ffff1f111f00000000f8788888ff77778800000000ff8888ff0000000000000000
+666666666677776666777766666666664404400400000000fff44ffff7f88fffff11f11f00000000ff888888ff87788800000000ff8888ff0000000000000000
+667777666666666666666666667777664404400400000000ffff4fffff887fffffffffff00000000ffffffffff7777ff00000000ff8888ff0000000000000000
 66688666666666666666666666688666ffffffffff7777fffffffffffcfcfcfc111ffffffcfcfcffff7778ff888888888888888f00000000fff78f8ff87878ff
 6611116666688666666886666611116677777777ff8778ffff1111ffcfcfcfcfff1ff11fcfcfcfcf777777ffcccccccccccccccf00000000ff78f8f88f8f8f87
 6166661666111166661111666166661677777777ff7777fff11111fffffffffffffff11ffcfcfcfc777778ffcccccccccccccccf00000000f788fffff88ffff8
