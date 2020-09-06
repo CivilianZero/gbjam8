@@ -207,9 +207,9 @@ function update_menu()
 end
 
 function update_level_card()
-	if (btn(🅾️)) then
-	   startlevel()
-	end
+ if (btn(🅾️)) then
+  startlevel()
+ end
 end
 
 function update_tutorial() 
@@ -221,13 +221,13 @@ function update_tutorial()
 end
 
 function check_next_tutorial() 
-  tut_count+=1
-  if tut_count > #levels[current_level].tutorials then
-   tut_count=1
-   _upd=update_aiturn
-  else
-   showtut(tut_count)
-  end
+ tut_count+=1
+ if tut_count > #levels[current_level].tutorials then
+  tut_count=1
+  _upd=update_aiturn
+ else
+  showtut(tut_count)
+ end
 end
 
 function update_game()
@@ -265,17 +265,17 @@ function update_game()
     slctd.x,slctd.y,slctd.mr
    elseif slctd and not slctd.hasatkd then
     if spaceisvalid(slctd.x,slctd.y) then
-      slimeatk(slctd)
-      slctd.hasmvd=true
-      _upd=update_slime
+     slimeatk(slctd)
+     slctd.hasmvd=true
+     _upd=update_slime
     else 
      slctd.x,slctd.y=
      locstore[1],locstore[2]
      cx,cy,mvdist=slctd.x,slctd.y,
      slctd.mr
-	 slctd=nil
+     slctd=nil
     end
-	  
+
    else
     _upd=update_slime
    end
@@ -362,12 +362,10 @@ end
 
 function update_aiturn()
  debug={} 
- --add(debug,"x:"..b.tar.x.." y:"..b.tar.y)
  local b=bads[c_en]
  ani_t=0
  turn_t=turn_org
  gettarget(b)
- add(debug,"x:"..b.tar.x.." y:"..b.tar.y)
  if not b.hasmvd then
   findpath(b)
  else
@@ -409,11 +407,11 @@ function update_aimove()
 end
 
 function update_win()
-  if btnp(❎) then
-   winwind.dur=0
-   winwind=nil
-   loadnextlevel()
-  end
+ if btnp(❎) then
+  winwind.dur=0
+  winwind=nil
+  loadnextlevel()
+ end
 end
 
 function update_lose()
@@ -489,13 +487,13 @@ function draw_game()
  end
 
  --visualize distance map test
--- for x=0,15 do
---  for y=0,15 do
---   if distmap[x][y]>0 then
---    print(distmap[x][y],x*8,y*8,8)
---   end
---  end
--- end
+ -- for x=0,15 do
+ --  for y=0,15 do
+ --   if distmap[x][y]>0 then
+ --    print(distmap[x][y],x*8,y*8,8)
+ --   end
+ --  end
+ -- end
 end
 
 function drawspr(_spr,_x,_y,_flip)
@@ -510,35 +508,33 @@ end
 -->8
 --utility
 function spaceisvalid(x,y)
-  local thingcount=0
-  for s in all(slimes) do
-   if s.x==x and s.y==y then
-    thingcount+=1
-   end
+ local thingcount=0
+ for s in all(slimes) do
+  if s.x==x and s.y==y then
+   thingcount+=1
   end
-  for t in all(tablets) do
-   if t.x==x and t.y==y then
-    thingcount+=1
-   end
+ end
+ for t in all(tablets) do
+  if t.x==x and t.y==y then
+   thingcount+=1
   end
-  return thingcount < 2
+ end
+ return thingcount < 2
 end
 
 function iswalkable(x,y,mode)
  local mode=mode or ""
-
+ local offx=levels[current_level].x+x
 
  if inbounds(x,y) then
-
- if mode=="alliedok" then
-  local slime=getslime(x,y)
-  if slime and slime.ally then
-    add(debug,"its a ally!")
+  if mode=="alliedok" then
+   local slime=getslime(x,y)
+   if slime and slime.ally then
     return true
+   end
   end
-end
 
-  local tle=mget(x,y)
+  local tle=mget(offx,y)
   if mode=="sight" then
    return not fget(tle,2)
   else
@@ -790,19 +786,18 @@ function slimeatk(s)
   local typ=s.ally and "player" or "bads"
   local tx,ty=s.x+a[1],s.y+a[2]
   local target=getslime(tx,ty)
-  add(debug,typ)
   if target then
    if typ=="bads" and target.ally or typ=="player" and not target.ally then
     target.hp-=s.atk
-	pushslime(s,target)
-	attackmove(s)
+    pushslime(s,target)
+    attackmove(s)
     addfloat("-"..s.atk,tx*8,ty*8,12)
    end
    if target.hp<=0 then
     add(dmobs,target)
     if target.ally then
      del(slimes,target)
-	 hidestats()
+     hidestats()
     else
      del(bads,target)
      c_en=1
@@ -1008,11 +1003,11 @@ function tablettarget()
 end
 
 function wincheck()
-if #bads==0 then
+ if #bads==0 then
   _upd=update_win	
   showwin()
-end
-local win_counter=0 
+ end
+ local win_counter=0 
  for t in all(tablets) do	
   if t.y==15 then	
    win_counter+=1 	
