@@ -9,7 +9,7 @@ function _init()
  turn_t=turn_org
  next_tut=1
  player_turn=0
-
+ card_timer=80
  dirx,diry={-1,1,0,0,1,1,-1,-1},{0,0,-1,1,-1,1,1,-1}
  current_level=1
  --level-opedia
@@ -234,7 +234,9 @@ function update_menu()
 end
 
 function update_level_card()
- if (btn(🅾️)) then
+ card_timer-=1
+ if card_timer<=0 then
+  card_timer=80
   startlevel()
  end
 end
@@ -253,16 +255,16 @@ function update_tutorial()
 end
 
 function check_next_tutorial() 
-  if next_tut > levels[current_level].opening_tutorials then
-   _upd=update_aiturn
-  else
-   showtut(next_tut)
-  end
+ if next_tut > levels[current_level].opening_tutorials then
+  _upd=update_aiturn
+ else
+  showtut(next_tut)
+ end
 end
 
 function show_next_tutorial() 
-  showtut(next_tut)
-  _upd=update_tutorial
+ showtut(next_tut)
+ _upd=update_tutorial
 end
 
 function update_game()
@@ -352,7 +354,6 @@ function update_tablet()
   ani_t=0
   turn_t=turn_org
   _upd=update_game
-  add(debug,player_turn)
   player_turn+=1
  end
 end
@@ -426,6 +427,9 @@ function update_aimove()
  turn_t-=1
 
  if ani_t==1 and turn_t<=0 then
+  if b.mov==mov_walk then
+   b.mr-=1
+  end
   if b.mr<=0 or b.x==b.tar.x and b.y==b.tar.y then
    b.hasmvd=true
    b.mr=b.mrmax
@@ -442,7 +446,6 @@ function update_aimove()
     _upd=update_aiturn
    end
   else
-   b.mr-=1
    b.hasmvd=false
    _upd=update_aiturn
   end
