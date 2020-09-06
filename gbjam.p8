@@ -7,7 +7,7 @@ function _init()
  t=0
  turn_org=30
  turn_t=turn_org
- tut_count=1
+ next_tut=1
  player_turn=0
 
  dirx,diry={-1,1,0,0,1,1,-1,-1},{0,0,-1,1,-1,1,1,-1}
@@ -15,21 +15,24 @@ function _init()
  --level-opedia
  levels={
   {
-   -- slime and enemy spawns go here??
    name="highway",
    x=0,
    opening_tutorials=1,
    tut_locations={0,1,1},
    tutorials={{"   protect your slime", "tribe as they journey", "across the sjrraka", "desert with their", "sacred tablets!"}, 
-   {"  Regular slimes are", "bread and butter units that", "attack in diagonally", "in front of", "themselves!"},{"  use positioning to", "your advantage to","avoid enemy attacks!"}},
+   {"  regular slimes are", "bread and butter units that", "attack diagonally", "in front of", "themselves!"},{"  use positioning to", "your advantage to","avoid enemy attacks!"}},
    music=1
   },
   {
-   -- slime and enemy spawns go here??
    name="desert gateway",
    x=17,
-   tutorials={{"   protect your slime", "tribe as they journey", "across the sjrraka", "desert with their", "sacred tablets!"}, 
-   {"  Regular slimes are", "versatile units that", "attack in an arc", "in front and also", "behind themselves!"},{"  use positioning to", "your advantage to","avoid enemy attacks!"}},
+   opening_tutorials=2,
+   tut_locations={0,1,2},
+   tutorials={{"  ","  the shield slime", "pushes enemies around it", "away when it attacks!"},
+   {"  Use it to create space", "for your other units", "and set up combos!"},
+   {"  Enemies will attack", "at the end of your", "turn. you can see", "what squares they will hit","by hovering over the unit."},
+   {"  the slime tablets will", "move towards to goal", "automatically. if", "you lose all of your","tablets in a level,", "you will lose! Be careful!"}
+   },
    music=1
   },
   {
@@ -141,7 +144,7 @@ function initialize_level()
  dmobs={}
 
  player_turn=0
- tut_count=1
+ next_tut=1
  ani_t,slctd,mvdist=0,nil,0
 
  spawnthings() 			
@@ -230,6 +233,7 @@ function update_tutorial()
  if btnp(❎) then
   tutwind.dur=0
   tutwind=nil
+  next_tut+=1
   if player_turn==0 then
    check_next_tutorial()
   else
@@ -239,23 +243,24 @@ function update_tutorial()
 end
 
 function check_next_tutorial() 
-  tut_count+=1
-  if tut_count > levels[current_level].opening_tutorials then
+  if next_tut > levels[current_level].opening_tutorials then
    _upd=update_aiturn
   else
-   showtut(tut_count)
+   showtut(next_tut)
   end
 end
 
-function check_ingame_tutorial() 
-  showtut(tut_count)
-  tut_count+=1
+function show_next_tutorial() 
+  showtut(next_tut)
   _upd=update_tutorial
 end
 
 function update_game()
- if player_turn == levels[current_level].tut_locations[tut_count] then
-  check_ingame_tutorial()
+ if player_turn == levels[current_level].tut_locations[next_tut] then
+  show_next_tutorial()
+ end
+ if not menuwind and allunitsmoved() then
+  showmenu()
  end
  c_en=1
  wincheck()
@@ -460,7 +465,7 @@ function _draw()
 end
 
 function draw_menu()
- cls()
+ cls(1)
  print("Slime Tactics",35,25,7)
  print("A game by Kevin Smith,",25,43,7)
  print("Jordan Carroll, and ",25,49,7)
@@ -469,12 +474,12 @@ function draw_menu()
 end
 
 function draw_level_card()
- cls()
+ cls(1)
  print(current_level .. ". " .. levels[current_level].name,34,60,7)
 end
 
 function draw_game()
- cls()
+ cls(1)
  map(levels[current_level].x,0)
  for d in all(dmobs) do
   if sin(time()*8)>0 then
@@ -564,6 +569,15 @@ function spaceisvalid(x,y)
   end
  end
  return thingcount < 2
+end
+
+function allunitsmoved()
+ for s in all(slimes) do
+  if not s.hasmvd then
+   return false
+  end
+ end
+ return true
 end
 
 function iswalkable(x,y,mode)
@@ -947,12 +961,12 @@ function drawind()
 end
 
 function showwin()
- winwind=addwind(36,50,54,13,{"level clear!"},0,6)
+ winwind=addwind(36,50,54,13,{"level clear!"},1,15)
  winwind.butt=true
 end
 
 function showmenu()
- menuwind=addwind(36,50,54,13,{"end turn?"},0,6)
+ menuwind=addwind(36,50,54,13,{"end turn?"},1,15)
  menuwind.butt=true
 end
 
