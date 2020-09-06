@@ -324,6 +324,7 @@ function update_game()
  losecheck()
 
  if menuwind then
+  hidestats()
   if btnp(❎) then
    menuwind.dur=0
    menuwind=nil
@@ -365,7 +366,6 @@ function update_game()
      paintatk(slctd)
      slctd=nil
     end
-
    else
     _upd=update_slime
    end
@@ -593,9 +593,31 @@ function draw_game()
 
  for s in all(slimes) do
   if cx==s.x and cy==s.y then
-   drawtarget(s)
+   if not s.hasmvd then
+    drawtarget(s) 
+   end
+   showstats(s)
+  elseif statswind then
+   hidestats()
   end
  end
+
+ for s in all(tablets) do
+  if cx==s.x and cy==s.y then
+   showstats(s)
+  elseif statswind then
+   hidestats()
+  end
+ end
+
+ for s in all(bads) do
+  if cx==s.x and cy==s.y then
+   showstats(s)
+  elseif statswind then
+   hidestats()
+  end
+ end
+
  --visualize distance map test
  -- for x=0,15 do
  --  for y=0,15 do
@@ -955,13 +977,6 @@ function movecursor(i)
   cx=destx
   cy=desty
   sfx(31)
-  local is_slime=getslime(cx,cy)	
-  if statswind then
-   hidestats()
-  end
-  if is_slime then
-   showstats(is_slime)
-  end
  end
 end
 
@@ -1063,7 +1078,9 @@ end
 
 function hidestats()
  statswind.dur=0
- statswind=nil
+ if statswind.dur==0 then
+  statswind=nil
+ end
 end
 -->8
 --mechanics
