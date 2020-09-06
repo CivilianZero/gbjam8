@@ -342,7 +342,6 @@ function update_aimove()
 end
 
 function update_win()
- showwin()
   if btnp(❎) then
    winwind.dur=0
    winwind=nil
@@ -881,6 +880,7 @@ function tablettarget()
 end
 
 function wincheck()
+ showwin()
  _upd=update_win
 end
 
