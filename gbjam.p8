@@ -472,8 +472,8 @@ function _draw()
  drawind()
  color(0)
  cursor(4,4)
- foreach(debug,print)
- -- cursor(80,4)
+-- foreach(debug,print)
+-- cursor(80,4)
 end
 
 function draw_menu()
@@ -966,7 +966,7 @@ function drawind()
    end
   else
    if w.butt then
-    oprint8("❎",wx+ww-15,wy+2+min(sin(time())),6,0)
+    oprint8("❎",wx+ww-15,wy+2+min(sin(time())),6,1)
    end
   end
  end
