@@ -9,7 +9,7 @@ function _init()
  turn_t=turn_org
  next_tut=1
  player_turn=0
-
+ card_timer=80
  dirx,diry={-1,1,0,0,1,1,-1,-1},{0,0,-1,1,-1,1,1,-1}
  current_level=1
  --level-opedia
@@ -224,7 +224,9 @@ function update_menu()
 end
 
 function update_level_card()
- if (btn(🅾️)) then
+ card_timer-=1
+ if card_timer<=0 then
+  card_timer=80
   startlevel()
  end
 end
