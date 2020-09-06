@@ -52,7 +52,7 @@ function _init()
  --shield slime sprite⬇️
  slime_name={"sword slime","shield slime","knight slime","thief slime","","tablet","desert demon","sand dragon","salt snake", "dune hound"}
  slime_ani={64,80,84,88,68,72,96,112,116,100}
- slime_hp={12,20,16,8,0,0,12,24,5,8}
+ slime_hp={12,20,16,8,0,14,12,24,5,8}
  slime_atk={4,2,6,12,0,10,6,8,3,4}
  slime_range={
   {{1,0},{1,-1},{1,1}},
@@ -624,8 +624,10 @@ function slimeatk(s)
   local tx,ty=s.x+a[1],s.y+a[2]
   local target=getslime(tx,ty)
   if target then
-   addfloat("-"..s.atk,tx*8,ty*8,12)
-   target.hp-=s.atk
+   if typ=="bads" and target.ally or typ=="player" and not target.ally then
+    target.hp-=s.atk
+    addfloat("-"..s.atk,tx*8,ty*8,12)
+   end
    if target.hp<=0 then
     add(dmobs,target)
     if target.ally then
