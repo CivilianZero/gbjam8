@@ -5,7 +5,7 @@ __lua__
 --by civz3r0 and jordab
 function _init()
  t=0
- turn_org=30
+ turn_org=20
  turn_t=turn_org
  next_tut=1
  player_turn=0
@@ -18,10 +18,9 @@ function _init()
    name="desert gateway",
    x=0,
    opening_tutorials=1,
-   tut_locations={0,1,1},
+   tut_locations={0,1,1,1},
    tutorials={{"   protect your slime", "tribe as they journey", "across the sjrraka", "desert with their", "sacred tablets!"}, 
-   {"  regular slimes are", "bread and butter units that", "attack diagonally", "in front of", "themselves!"},{"  use positioning to", "your advantage to","avoid enemy attacks!"}},
-   music=1
+   {"  regular slimes are", "bread and butter units that", "attack diagonally", "in front of", "themselves!"},{"  use positioning to", "your advantage to","avoid enemy attacks!"},{"When you're done, ","press 🅾️ to end your","turn."}}
   },
   {
    name="highway",
@@ -34,8 +33,7 @@ function _init()
    {"use it to create", "space for your","other units", "and set up combos!"},
    {"","the slime tablets will", "move towards the goal", "automatically"},
    {"","if you lose all of","your tablets in a level,", "you will lose! Be careful!"}
-   },
-   music=1
+   }
   },
   {
    name="dunes",
@@ -43,8 +41,7 @@ function _init()
    tut_locations={0,1},
    x=34,
    tutorials={{"","grapple slimes pull", "faraway enemies close,", "for followups!"},
-   {"slime rangers are fast", "moving units that","can attack up close", "and at range!"}},
-   music=1
+   {"slime rangers are fast", "moving units that","can attack up close", "and at range!"}}
   },
   {
    name="salt flats",
@@ -52,32 +49,28 @@ function _init()
    tut_locations={0,0},
    x=34,
    tutorials={{"","the thief slime", "attacks from behind,", "for massive damage!"},
-   {"He doesn't", "actually steal","anything."}},
-   music=1
+   {"He doesn't", "actually steal","anything."}}
   },
   {
-   opening_tutorials=1,
-   tut_locations={0,1},
+   opening_tutorials=0,
+   tut_locations={0},
    name="island hopping",
    x=51,
-   tutorials={},
-   music=1
+   tutorials={}
   },
   {
    opening_tutorials=0,
    tut_locations={0},
    name="fortress I",
    x=68,
-   tutorials={},
-   music=1
+   tutorials={}
   },
   {
    opening_tutorials=0,
    tut_locations={0},
    name="fortress II",
    x=85,
-   tutorials={},
-   music=1
+   tutorials={}
   },
  }
 
@@ -98,7 +91,7 @@ function _init()
  --shield slime sprite⬇️
  slime_name={"slime","shield slime","ranger slime","thief slime","slime mage","tablet","grapple slime","desert demon","sand dragon","salt snake", "dune hound", "obsidian golem"}
  slime_ani={64,80,84,88,68,72,76,96,112,116,100,104}
- slime_hp={8,16,14,8,6,0,9,9,24,5,8,30}
+ slime_hp={8,16,14,8,6,10,9,9,24,5,8,24}
  slime_atk={6,3,5,12,4,0,4,6,8,3,4,10}
  slime_range={
   {{1,-1},{1,1}},
@@ -160,14 +153,14 @@ function _init()
   true,
   true,
   true,
-  false,false,false,false,
+  false,true,false,false,
   true,
   true,
   false,
   true,
   true
  }
- slime_mov={3,3,6,4,2,0,4,3,4,4,5,2}
+ slime_mov={3,3,6,4,2,0,4,3,4,3,5,2}
 
  debug={}
 
@@ -186,6 +179,7 @@ function initialize_level()
  tablets={}
  bads={}
  dmobs={}
+ winds={}
 
  player_turn=0
  next_tut=1
@@ -197,6 +191,7 @@ end
 
 function cheat()
  if current_level==4 then
+  slime_range[10]=4
   slime_range[10]={{-1,0},{-2,0}}
   slime_hp[10]=10
  end
@@ -211,6 +206,7 @@ function game_start()
 
  locstore,floats,movcursor,
  winds,menuwind={},{},{},{},nil
+ atk_vis={}
 
  distmap=blankmap(-1)
  initialize_level()
@@ -225,11 +221,13 @@ function loadnextlevel()
 end
 
 function startlevel() 
- music(levels[current_level].music)
+ music(1)
  if statswind then
   hidestats()
  end
- showtut(1)
+ if #levels[current_level].tutorials~=0 then
+  showtut(1)
+ end
  _upd,_drw=update_tutorial,draw_game
 end
 
@@ -296,6 +294,9 @@ function update_tutorial()
    _upd=update_game
   end
  end
+ if #levels[current_level].tutorials<=0 then
+  check_next_tutorial() 
+ end
 end
 
 function check_next_tutorial() 
@@ -312,18 +313,14 @@ function show_next_tutorial()
 end
 
 function update_game()
- if player_turn == levels[current_level].tut_locations[next_tut] then
+ if player_turn==levels[current_level].tut_locations[next_tut] then
   show_next_tutorial()
- end
- if not menuwind and allunitsmoved() then
-  showmenu()
  end
  c_en=1
  wincheck()
  losecheck()
 
  if menuwind then
-  hidestats()
   if btnp(❎) then
    menuwind.dur=0
    menuwind=nil
@@ -356,6 +353,7 @@ function update_game()
      slctd.hasmvd=true
 	 end
      slimeatk(slctd)
+     losecheck()
      _upd=update_slime
     else 
      slctd.x,slctd.y=
@@ -451,13 +449,18 @@ function update_slime()
 end
 
 function update_aiturn()
- debug={} 
+ wincheck()
+ losecheck()
  local b=bads[c_en]
  ani_t=0
  turn_t=turn_org
  gettarget(b)
  if not b.hasmvd then
-  findpath(b)
+  if b.x~=b.tar.x or b.y~=b.tar.y then
+   findpath(b)
+  else
+   tar_reached(b)
+  end
  else
   slimeatk(b)
  end
@@ -465,6 +468,7 @@ function update_aiturn()
 end
 
 function update_aimove()
+ losecheck()
  local b=bads[c_en]
  ani_t=min(ani_t+0.08,1)
  if b.mov then
@@ -478,20 +482,7 @@ function update_aimove()
    b.mr-=1
   end
   if b.mr<=0 or b.x==b.tar.x and b.y==b.tar.y then
-   b.hasmvd=true
-   b.mr=b.mrmax
-   paintatk(b)
-   if c_en==#bads then
-    c_en=1
-    if b.mov==mov_walk then
-     _upd=update_tabletplan
-    else
-     _upd=update_aiturn
-    end
-   else		
-    c_en+=1
-    _upd=update_aiturn
-   end
+   tar_reached(b)
   else
    b.hasmvd=false
    _upd=update_aiturn
@@ -507,8 +498,19 @@ function update_win()
  end
 end
 
+function update_finish()
+ if btnp(❎) then
+  reload(0x2000, 0x2000, 0x1000)
+  current_level=1
+  game_start()
+ end
+end
+
 function update_lose()
- addwind(36,50,54,13,{"loser"},0,6)
+ if btnp(❎) then
+  reload(0x2000, 0x2000, 0x1000)
+  game_start()
+ end
 end
 
 -->8
@@ -520,22 +522,36 @@ function _draw()
  drawind()
  color(0)
  cursor(4,4)
--- foreach(debug,print)
--- cursor(80,4)
+ foreach(debug,print)
 end
 
 function draw_menu()
  cls(1)
- print("Slime Tactics",35,25,7)
- print("A game by Kevin Smith,",25,43,7)
- print("Jordan Carroll, and ",25,49,7)
- print("Kenney Goad",25,55,7)
+ print("slime tactics",35,25,7)
+ print("a game by kevin smith,",25,43,7)
+ print("jordan carroll, and ",25,49,7)
+ print("kenney goad",25,55,7)
  print("press ❎ to start",31,70,7)
 end
 
 function draw_level_card()
  cls(1)
  print(current_level .. ". " .. levels[current_level].name,34,60,7)
+end
+
+function draw_finish()
+ cls(q)
+ color(7)
+ print("congratulations!",34,60)
+ print("you have led your tribe to safety!",14,66)
+ print("press ❎ to play again",22,72)
+end
+
+function draw_lose()
+ cls(1)
+ color(7)
+ print("game over",34,60)
+ print("press ❎ to try again",20,68)
 end
 
 function draw_game()
@@ -596,7 +612,7 @@ function draw_game()
     drawtarget(s) 
    end
    showstats(s)
-  elseif statswind then
+  else
    hidestats()
   end
  end
@@ -604,7 +620,7 @@ function draw_game()
  for s in all(tablets) do
   if cx==s.x and cy==s.y then
    showstats(s)
-  elseif statswind then
+  else
    hidestats()
   end
  end
@@ -612,8 +628,19 @@ function draw_game()
  for s in all(bads) do
   if cx==s.x and cy==s.y then
    showstats(s)
-  elseif statswind then
+  else
    hidestats()
+  end
+ end
+
+ for v in all(atk_vis) do
+  debug={}
+  if sin(time()*8)>0 then
+   drawspr({32,33,34,35},v.x*8,v.y*8,false)
+  end
+  v.dur-=1
+  if v.dur<=0 then
+   del(atk_vis,v)
   end
  end
 
@@ -926,6 +953,7 @@ function slimeatk(s)
  s.mov=mov_bump
  ani_t=0
  s.hasatkd=true
+ add_atk_vis(s)
  for a in all(sr) do
   local typ=s.ally and "player" or "bads"
   local tx,ty=s.x+a[1],s.y+a[2]
@@ -940,6 +968,7 @@ function slimeatk(s)
    if target.hp<=0 then
     add(dmobs,target)
     if target.ally then
+     del(tablets,target)
      del(slimes,target)
      hidestats()
     else
@@ -1044,6 +1073,9 @@ function showwin()
  winwind=addwind(36,50,54,13,{"level clear!"},1,15)
  sfx(34)
  winwind.butt=true
+ if current_level==#levels then
+  _upd,_drw=update_finish,draw_finish
+ end
 end
 
 function showmenu()
@@ -1076,35 +1108,66 @@ function showstats(ent)
 end
 
 function hidestats()
- statswind.dur=0
- if statswind.dur==0 then
+ if statswind then
+  statswind.dur=0
   statswind=nil
  end
 end
 -->8
 --mechanics
 
+function check_block(unit)
+ local range=unit.range
+ for r in all(range) do
+  if not iswalkable(r[1],r[2]) then
+   return false
+  end
+ end
+ return true
+end
+
+function add_atk_vis(unit)
+ local range=unit.range
+ for r in all(range) do
+  local rx,ry=unit.x+r[1],unit.y+r[2]
+ end
+end
+
+function tar_reached(b)
+ b.hasmvd=true
+ b.mr=b.mrmax
+ paintatk(b)
+ c_en+=1
+ if c_en>=#bads then
+  c_en=1
+  if b.mov==mov_walk then
+   _upd=update_tabletplan
+  else
+   _upd=update_aiturn
+  end
+ else		
+  _upd=update_aiturn
+ end
+end
+
 function gettarget(e)
  calcdist(e.x,e.y)
- local bx,by,bdst,tdst,ttable=0,0,99,99,{}
+ local bx,by,bdst,tdst,ttable,maxdist=e.x,e.y,99,99,{},6
  for t in all(tablets) do
   add(ttable,t)
  end
  for s in all(slimes) do
   add(ttable,s)
  end
- -- add more decision logic??
  for t in all(ttable) do
   for r in all(e.range) do
    local dx,dy=t.x-r[1],t.y-r[2]
    if iswalkable(dx,dy,"checkmobs") and buddycheck(b,dx,dy) then
     tdst=distmap[dx][dy]
    end
-   if tdst<bdst then
-    if los(dx,dy,t.x,t.y) then
-     bdst=tdst
-     bx,by=dx,dy
-    end
+   if tdst<bdst and los(dx,dy,t.x,t.y) then
+    bdst=tdst
+    bx,by=dx,dy
    end
   end
  end
@@ -1162,7 +1225,7 @@ end
 
 function losecheck()
  if #tablets==0 or #slimes==0 then
-  _upd=update_lose
+  _upd,_drw=update_lose,draw_lose
  end
  return false
 end
