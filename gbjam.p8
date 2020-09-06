@@ -32,102 +32,102 @@ function _init()
    {"  Use it to create space", "for your other units", "and set up combos!"},
    {"  Enemies will attack", "at the end of your", "turn. you can see", "what squares they will hit","by hovering over the unit."},
    {"  the slime tablets will", "move towards to goal", "automatically. if", "you lose all of your","tablets in a level,", "you will lose! Be careful!"}
-   },
-   music=1
   },
-  {
-   name="dunes",
-   x=34,
-   tutorials={{"","  the shield slime", "pushes enemies back", "when it attacks!"}},
-   music=1
-  },
-  {
-   name="island hopping",
-   x=51,
-   tutorials={{"","hey hot momma"}},
-   music=1
-  },
-  {
-   name="fortress",
-   x=68,
-   tutorials={{"","sweet berry wine!"}},
-   music=1
-  },
- }
+  music=1
+ },
+ {
+  name="dunes",
+  x=34,
+  tutorials={{"","  the shield slime", "pushes enemies back", "when it attacks!"}},
+  music=1
+ },
+ {
+  name="island hopping",
+  x=51,
+  tutorials={{"","hey hot momma"}},
+  music=1
+ },
+ {
+  name="fortress",
+  x=68,
+  tutorials={{"","sweet berry wine!"}},
+  music=1
+ },
+}
 
 
- --slime-opedia
- --friendly: 1-??
- --enemies: ??-??
- --sword slime: type 1
- --shield slime: type 2
- --knight slime: type 3
- --thief slime: type 4
- --?? slime: type 5
- --tablet: type 6
- --bunny enemy: type 7
- --dragon enemy: type 8
+--slime-opedia
+--friendly: 1-??
+--enemies: ??-??
+--sword slime: type 1
+--shield slime: type 2
+--knight slime: type 3
+--thief slime: type 4
+--?? slime: type 5
+--tablet: type 6
+--bunny enemy: type 7
+--dragon enemy: type 8
 
- --spear slime currently has
- --shield slime sprite⬇️
- slime_name={"slime","shield slime","knight slime","thief slime","slime mage","tablet","grapple slime","desert demon","sand dragon","salt snake", "dune hound"}
- slime_ani={64,80,84,88,68,72,76,96,112,116,100}
- slime_hp={12,20,16,8,0,9,12,24,5,8}
- slime_atk={30,3,5,12,4,0,4,6,8,3,4}
- slime_range={
-  {{1,-1},{1,1}},
-  {{1,0},{1,-1},{1,1},{-1,0},{-1,1},{-1,-1}},
-  {{1,1},{2,1},{1,-1},{2,-1}},
-  {{-1,0}},
-  {{3,0},{3,-1},{3,1},{4,0}},
-  {{0,0}},
-  {{4,0},{3,0},{2,0},{1,0}},
-  {{-1,1},{-1,0},{0,1}},
-  {{-1,0},{-2,0},{-3,0},{-4,0},{-1,1},{-1,-1}},
-  {{-1,0}},
-  {{-1,0},{-1,1},{-1,-1}}
- }
- slime_push={
-  {0,0},
-  {1,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {-999,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {0,0},
- }
- slime_attack_move={
-  {0,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {0,0},
- }
- slime_cleave={
-  true,
-  true,
-  true,
-  false,false,false,false,
-  true,
-  true,
-  false,
-  true
- }
- slime_mov={3,3,6,4,1,0,4,1,4,2,5}
+--spear slime currently has
+--shield slime sprite⬇️
+slime_name={"slime","shield slime","knight slime","thief slime","slime mage","tablet","grapple slime","desert demon","sand dragon","salt snake", "dune hound"}
+slime_ani={64,80,84,88,68,72,76,96,112,116,100}
+slime_hp={12,20,16,8,0,9,12,24,5,8}
+slime_atk={30,3,5,12,4,0,4,6,8,3,4}
+slime_range={
+ {{1,-1},{1,1}},
+ {{1,0},{1,-1},{1,1},{-1,0},{-1,1},{-1,-1}},
+ {{1,1},{2,1},{1,-1},{2,-1}},
+ {{-1,0}},
+ {{3,0},{3,-1},{3,1},{4,0}},
+ {{0,0}},
+ {{4,0},{3,0},{2,0},{1,0}},
+ {{-1,1},{-1,0},{0,1}},
+ {{-1,0},{-2,0},{-3,0},{-4,0},{-1,1},{-1,-1}},
+ {{-1,0}},
+ {{-1,0},{-1,1},{-1,-1}}
+}
+slime_push={
+ {0,0},
+ {1,0},
+ {0,0},
+ {0,0},
+ {0,0},
+ {0,0},
+ {-999,0},
+ {0,0},
+ {0,0},
+ {0,0},
+ {0,0},
+}
+slime_attack_move={
+ {0,0},
+ {0,0},
+ {0,0},
+ {0,0},
+ {0,0},
+ {0,0},
+ {0,0},
+ {0,0},
+ {0,0},
+ {0,0},
+ {0,0},
+}
+slime_cleave={
+ true,
+ true,
+ true,
+ false,false,false,false,
+ true,
+ true,
+ false,
+ true
+}
+slime_mov={3,3,6,4,1,0,4,1,4,2,5}
 
- debug={}
+debug={}
 
- menu_init()
+menu_init()
 end
 
 function menu_init()
@@ -245,16 +245,16 @@ function update_tutorial()
 end
 
 function check_next_tutorial() 
-  if next_tut > levels[current_level].opening_tutorials then
-   _upd=update_aiturn
-  else
-   showtut(next_tut)
-  end
+ if next_tut > levels[current_level].opening_tutorials then
+  _upd=update_aiturn
+ else
+  showtut(next_tut)
+ end
 end
 
 function show_next_tutorial() 
-  showtut(next_tut)
-  _upd=update_tutorial
+ showtut(next_tut)
+ _upd=update_tutorial
 end
 
 function update_game()
@@ -344,7 +344,6 @@ function update_tablet()
   ani_t=0
   turn_t=turn_org
   _upd=update_game
-  add(debug,player_turn)
   player_turn+=1
  end
 end
@@ -418,6 +417,9 @@ function update_aimove()
  turn_t-=1
 
  if ani_t==1 and turn_t<=0 then
+  if b.mov==mov_walk then
+   b.mr-=1
+  end
   if b.mr<=0 or b.x==b.tar.x and b.y==b.tar.y then
    b.hasmvd=true
    b.mr=b.mrmax
@@ -434,7 +436,6 @@ function update_aimove()
     _upd=update_aiturn
    end
   else
-   b.mr-=1
    b.hasmvd=false
    _upd=update_aiturn
   end
