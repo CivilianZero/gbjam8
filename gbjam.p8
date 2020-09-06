@@ -161,6 +161,8 @@ end
 
 function update_game()
  c_en=1
+ wincheck()
+ losecheck()
  if menuwind then
   if btnp(❎) then
    menuwind.dur=0
@@ -320,6 +322,14 @@ function update_aimove()
    _upd=update_aiturn
   end
  end
+end
+
+function update_win()
+ addwind(36,50,54,13,{"winner"},0,6)
+end
+
+function update_lose()
+ addwind(36,50,54,13,{"loser"},0,6)
 end
 
 -->8
@@ -620,9 +630,10 @@ function slimeatk(s)
  ani_t=0
  s.hasatkd=true
  for a in all(sr) do
-  local typ=s.ally and "bads" or "player"
+  local typ=s.ally and "player" or "bads"
   local tx,ty=s.x+a[1],s.y+a[2]
   local target=getslime(tx,ty)
+  add(debug,typ)
   if target then
    if typ=="bads" and target.ally or typ=="player" and not target.ally then
     target.hp-=s.atk
@@ -831,17 +842,20 @@ function tablettarget()
 end
 
 function wincheck()
+ local win_counter=0
  for t in all(tablets) do
-  if not t.y==15 then
-   return false
+  if t.y==15 then
+   win_counter+=1 
   end
  end
- return true
+ if win_counter==#tablets then
+  _upd=update_win
+ end
 end
 
 function losecheck()
  if #tablets==0 or #slimes==0 then
-  return true
+  _upd=update_lose
  end
  return false
 end
