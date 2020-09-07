@@ -11,7 +11,7 @@ function _init()
  player_turn=0
  card_timer=80
  dirx,diry={-1,1,0,0,1,1,-1,-1},{0,0,-1,1,-1,1,1,-1}
- current_level=1
+ current_level=4
  --level-opedia
  levels={
   {
@@ -45,10 +45,11 @@ function _init()
   },
   {
    name="salt flats",
-   opening_tutorials=1,
+   opening_tutorials=2,
    tut_locations={0,0},
    x=34,
-   tutorials={{"","the thief slime", "attacks from behind,", "for massive damage!"}}
+   tutorials={{"","the thief slime", "attacks from behind,", "for massive damage!"},
+   {"He doesn't", "actually steal","anything."}}
   },
   {
    opening_tutorials=0,
