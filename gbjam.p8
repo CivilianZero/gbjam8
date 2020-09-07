@@ -45,11 +45,10 @@ function _init()
   },
   {
    name="salt flats",
-   opening_tutorials=2,
+   opening_tutorials=1,
    tut_locations={0,0},
    x=34,
-   tutorials={{"","the thief slime", "attacks from behind,", "for massive damage!"},
-   {"He doesn't", "actually steal","anything."}}
+   tutorials={{"","the thief slime", "attacks from behind,", "for massive damage!"}}
   },
   {
    opening_tutorials=0,
