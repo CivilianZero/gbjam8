@@ -1,4 +1,4 @@
-pico-8 cartridge // http://www.pico-8.com
+pic/-8 cartridge // http://www.pic/-8.com
 version 29
 __lua__
 --slime tactics
@@ -519,8 +519,6 @@ function _draw()
  pal(12,1)
  _drw()
  drawind()
- color(0)
- cursor(4,4)
  foreach(debug,printh)
 end
 
