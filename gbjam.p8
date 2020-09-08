@@ -11,7 +11,7 @@ function _init()
  player_turn=0
  card_timer=80
  dirx,diry={-1,1,0,0,1,1,-1,-1},{0,0,-1,1,-1,1,1,-1}
- current_level=4
+ current_level=1
  --level-opedia
  levels={
   {
@@ -222,9 +222,7 @@ end
 
 function startlevel() 
  music(1)
- if statswind then
-  hidestats()
- end
+ hidestats()
  if #levels[current_level].tutorials~=0 then
   showtut(1)
  end
@@ -523,7 +521,7 @@ function _draw()
  drawind()
  color(0)
  cursor(4,4)
- foreach(debug,print)
+ foreach(debug,printh)
 end
 
 function draw_menu()
@@ -607,28 +605,17 @@ function draw_game()
   end
  end
 
- for s in all(slimes) do
-  if cx==s.x and cy==s.y then
-   if not s.hasmvd then
-    drawtarget(s) 
+local units={}
+foreach(slimes,function(u) add(units,u) end)
+foreach(tablets,function(u) add(units,u) end)
+foreach(bads,function(u) add(units,u) end)
+
+ for u in all(units) do
+  if cx==u.x and cy==u.y then
+   if not u.hasmvd and #u.atkpaint>0 then
+    drawtarget(u) 
    end
-   showstats(s)
-  else
-   hidestats()
-  end
- end
-
- for s in all(tablets) do
-  if cx==s.x and cy==s.y then
-   showstats(s)
-  else
-   hidestats()
-  end
- end
-
- for s in all(bads) do
-  if cx==s.x and cy==s.y then
-   showstats(s)
+   showstats(u)
   else
    hidestats()
   end
@@ -1009,7 +996,6 @@ function movecursor(i)
  end
 end
 
-
 function addfloat(_txt,_x,_y,_c)
  add(floats,{txt=_txt,x=_x,y=_y,c=_c,ty=_y-10,t=0})
 end
@@ -1094,6 +1080,7 @@ function showstats(ent)
  local winy = 92
  if ent.y > 8 then
   winy = 2
+  winds={}
  end
  if ent.ally then
   if ent.hasmvd then
