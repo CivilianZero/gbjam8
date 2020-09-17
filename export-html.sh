@@ -7,7 +7,7 @@ $PICO8 -export slime_tactics/slime_tactics.html ./gbjam.p8
 mv slime_tactics/slime_tactics.html slime_tactics/index.html
 zip -r slime_tactics.zip slime_tactics
 
-butler push slime_tactics.zip civilianzero/slime_tactics:html
+butler push slime_tactics.zip civilianzero/slime_tactics:html --if-changed
 
 rm slime_tactics
 rm slime_tactics.zip
