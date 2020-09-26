@@ -98,7 +98,7 @@ function _init()
  slime_range={
   {{1,-1},{1,1}},
   {{1,0},{1,-1},{1,1},{-1,0},{-1,1},{-1,-1}},
-  {{1,1},{2,1},{1,-1},{2,-1}},
+  {{0,-1},{0,1},{-1,-1},{-1,1}},
   {{-1,0}},
   {{3,0},{3,-1},{3,1},{4,0}},
   {{0,0}},
@@ -109,19 +109,33 @@ function _init()
   {{-1,0},{-1,1},{-1,-1}},
   {{-2,0},{-1,1},{-1,-1},{-2,1},{-2,-1},{-3,0},{-2,2},{-2,-2}}
  }
- slime_push={
-  {0,0},
-  {1,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {-999,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {0,0},
-  {-1,0}
+ slime_push_strength={
+  0,
+  1,
+  0,
+  0,
+  0,
+  0,
+  -5,
+  0,
+  0,
+  0,
+  0,
+  1
+ }
+ slime_push_axis={
+  0,
+  "x",
+  0,
+  0,
+  0,
+  0,
+  "x",
+  0,
+  0,
+  0,
+  0,
+  "x"
  }
  slime_attack_move={
   {0,0},
@@ -187,6 +201,7 @@ function initialize_level()
  next_tut=1
  ani_t,slctd,mvdist,aiming=0,nil,0,false
  loaded_attack_range=nil
+ loaded_push_axis=nil
 
  spawnthings() 			
 
@@ -270,7 +285,7 @@ function _update60()
 end
 
 function update_menu()
- if (btn(❎)) game_start()
+ if (btnp(❎)) game_start()
 end
 
 function update_level_card()
@@ -348,6 +363,7 @@ function update_game()
    if not slctd and is_slime and not is_slime.hasmvd then
     slctd=is_slime
     loaded_attack_range=slctd.range
+    loaded_push_axis=slctd.push_axis
     locstore[1],locstore[2],mvdist=
     slctd.x,slctd.y,slctd.mr
    elseif slctd and slctd.aiming and not aiming and spaceisvalid(slctd.x,slctd.y) then
@@ -397,6 +413,7 @@ end
 function disableaiming()
   aiming=false
   loaded_attack_range=nil
+  loaded_push_axis=nil
 end
 
 function update_tablet()
@@ -483,14 +500,14 @@ end
 function update_aimove()
  losecheck()
  local b=bads[c_en]
- ani_t=min(ani_t+0.3,1)
+ ani_t=min(ani_t+1,1)
  if b.mov then
   b:mov()
  end
 
  
  if btn(🅾️) then
-  turn_t-=6
+  turn_t-=20
  else
   turn_t-=1
  end
@@ -832,7 +849,8 @@ function addslime(typ,_x,_y)
   mov=nil,
   range=slime_range[typ],
   cleave=slime_cleave[typ],
-  push=slime_push[typ],
+  push_s=slime_push_strength[typ],
+  push_axis=slime_push_axis[typ],
   atkmv=slime_attack_move[typ],
   aiming=slime_aiming[typ],
   atk=slime_atk[typ],
@@ -920,26 +938,41 @@ end
 
 function pushslime(s,t)
  local destx,desty
- if s.push[1] < -100 then
-  local i=1
-  while not iswalkable(s.x+i,s.y,"checkmobs") do
+
+ if loaded_push_axis=="x" then
+  local i=0
+  local mod=1
+  -- flip mod if we're pulling
+  if s.push_s < 0 then
+    mod=mod*-1
+  end
+  -- flip it again if we're facing the opposite direction
+  if t.x < s.x then
+    mod=mod*-1
+  end
+  while iswalkable(t.x+(i+1)*mod,t.y,"checkmobs") and abs(i)<abs(s.push_s) do
    i+=1
+  end
+  t.x=t.x+i*mod
  end
-  t.x=s.x+i
+
+ if loaded_push_axis=="y" then
+  local i=0
+  local mod=1
+  if s.push_s < 0 then
+    mod=mod*-1
+  end
+  -- flip it again if we're facing the opposite direction
+  if t.y < s.y then
+    mod=mod*-1
+  end
+  while iswalkable(t.x,t.y+(i+1)*mod,"checkmobs") and abs(i)<abs(s.push_s) do
+   i+=1
+  end
+  t.y=t.y+i*mod
  end
- if t.x>s.x then
-  destx=t.x+s.push[1]
- else
-  destx=t.x-s.push[1]
- end
- if t.y>s.y then
-  desty=t.y+s.push[2]
- else
-  desty=t.y-s.push[2]
- end
- if iswalkable(destx,desty,"checkmobs") then
-  t.x,t.y=destx,desty
- end
+
+ paintatk(t)
 end
 
 function attackmove(s)
@@ -954,6 +987,7 @@ function slimeaim(i)
 
   -- left input means flip all x negative
   loaded_attack_range=transformrange(s.range, i)
+  loaded_push_axis=transformaxis(s.push_axis, i)
   paintatk(s)
   -- right input means return all x to normal
   -- up input means 
@@ -986,13 +1020,22 @@ function transformrange(rng, i)
       add(placeholder, new);
     end
     return placeholder
-  elseif i==0 then
-    -- left
   else 
     return rng
   end
-  
+end
 
+function transformaxis(axis, i)
+  if i==3 or i==2 then
+    -- up or down
+    if axis=="x" then
+      return "y"
+    elseif axis=="y" then
+      return "x"
+    end
+  else 
+    return axis
+  end
 end
 
 function slimeatk(s)
@@ -1020,6 +1063,9 @@ function slimeatk(s)
     pushslime(s,target)
     attackmove(s)
     addfloat("-"..s.atk,tx*8,ty*8,12)
+   end
+   if typ=="player" and target.ally and s.push_s < 0 then
+    pushslime(s,target)
    end
    if target.hp<=0 then
     add(dmobs,target)
