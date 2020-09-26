@@ -483,12 +483,17 @@ end
 function update_aimove()
  losecheck()
  local b=bads[c_en]
- ani_t=min(ani_t+0.08,1)
+ ani_t=min(ani_t+0.3,1)
  if b.mov then
   b:mov()
  end
 
- turn_t-=1
+ 
+ if btn(🅾️) then
+  turn_t-=4
+ else
+  turn_t-=1
+ end
 
  if ani_t==1 and turn_t<=0 then
   if b.mov==mov_walk then
