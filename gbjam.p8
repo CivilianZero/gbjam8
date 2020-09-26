@@ -11,7 +11,7 @@ function _init()
  player_turn=0
  card_timer=80
  dirx,diry={-1,1,0,0,1,1,-1,-1},{0,0,-1,1,-1,1,1,-1}
- current_level=2
+ current_level=3
  --level-opedia
  levels={
   {
@@ -490,7 +490,7 @@ function update_aimove()
 
  
  if btn(🅾️) then
-  turn_t-=4
+  turn_t-=6
  else
   turn_t-=1
  end
